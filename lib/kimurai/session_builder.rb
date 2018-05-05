@@ -129,7 +129,7 @@ module Kimurai
     end
 
     def check_headless_mode_for_selenium
-      if (ENV["HEADLESS"] == "true" || ENV["KIMURAI_ENV"] == "production") && driver_type == :selenium
+      if (ENV["HEADLESS"] != "false" || ENV["KIMURAI_ENV"] == "production") && driver_type == :selenium
         @driver_options.args << "--headless"
       end
     end

@@ -18,8 +18,8 @@ module Kimurai
           @driver_options.profile.secure_ssl = false
           @driver_options.profile.assume_untrusted_certificate_issuer = false
         when :selenium_chrome
-          # fix push didn't work in chrome
-          @driver_options.args.push("--ignore-certificate-errors", "--allow-insecure-localhost")
+          @driver_options.args << "--ignore-certificate-errors"
+          @driver_options.args << "--allow-insecure-localhost"
         when :poltergeist_phantomjs
           @driver_options[:phantomjs_options].push("--ignore-ssl-errors=yes", "--ssl-protocol=any")
         end

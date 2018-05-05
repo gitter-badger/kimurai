@@ -61,13 +61,13 @@ module Kimurai
 
     # parallel
 
-    def parse_with_threads(listings, threads, driver:, method_name:)
+    def parse_with_threads(listings, threads, driver: self.class.driver, method_name:)
       parts = listings.in_groups(threads, false)
       threads = []
 
       parts.each do |part|
         threads << Thread.new(part) do
-          crawler = self.class.new(driver)
+          crawler = self.class.new(driver: driver)
 
           part.each do |listing_data|
             crawler.send(method_name, listing_data)

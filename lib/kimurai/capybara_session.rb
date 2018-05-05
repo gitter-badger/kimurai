@@ -41,16 +41,9 @@ module Capybara
       end
     end
 
-    # http://www.rubydoc.info/github/jnicklas/capybara/Capybara/Session#window_opened_by-instance_method
-    def within_window_opened_by(action:)
-      opened_window = window_opened_by(**options) do
-        action
-      end
-    end
-
-    # Pass al lambda as an action
-    # http://www.tweetegy.com/2012/01/ruby-blocks-procs-and-lambdas/
-    def process_in_new_window_by(action:)
+    # pass a lambda as an action
+    # ToDo: merge visit_in_new_window into this one
+    def within_new_window_by(action:)
       opened_window = window_opened_by { action.call }
       within_window(opened_window) do
 

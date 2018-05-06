@@ -56,7 +56,7 @@ module Kimurai
       Logger.error "Pipeline: dropped item #{e.receiver if e.respond_to?(:receiver)}: " \
         "#{e.message}\n#{e.inspect}\n#{e.backtrace}"
     ensure
-      Stats.print
+      Stats.print#(:main)
     end
 
     # parallel

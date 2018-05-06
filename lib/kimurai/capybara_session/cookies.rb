@@ -37,12 +37,12 @@ module Capybara
         driver.set_cookie(nil, nil, cookie)
       when :selenium
         if current_url == "data:,"
-          Kimurai::Logger.debug "Session: Can't set cookies for selenium because " \
+          Kimurai::Logger.error "Session: Can't set cookies for selenium because " \
             "current_url == 'data:,'. Visit any valid page first and try again. Skipped."
         else
           begin
             driver.browser.manage.add_cookie(cookie)
-          rescue Selenium::WebDriver::Error => e
+          rescue => e
             Kimurai::Logger.error "Can't set cookie for selenium, skipped. Error: #{e.class} #{e.message}"
           end
         end

@@ -7,11 +7,10 @@ module Kimurai
       if @session_proxy && driver_type == :selenium
         if @session_proxy[:user].nil? && @session_proxy[:password].nil?
           unless ["http", "socks5"].include? @session_proxy[:type]
-            raise "SessionBuilder: Wrong type of proxy #{@session_proxy[:type]}. Allowed only http and sock5."
+            raise ConfigurationError, "Session builder: Wrong type of proxy #{@session_proxy[:type]}. Allowed only http and sock5."
           end
-
           ip, port, type = @session_proxy.values
-          Kimurai::Logger.debug "Session: setting #{type} proxy: #{ip}:#{port}"
+
           case driver_name
           when :selenium_firefox
             @driver_options.profile["network.proxy.type"] = 1 # manual proxy
@@ -27,15 +26,18 @@ module Kimurai
               @driver_options.profile["network.proxy.socks_port"] = port.to_i
               @driver_options.profile["network.proxy.socks_version"] = 5
             end
+
+            Kimurai::Logger.debug "Session builder: enabled proxy for selenium_firefox (type #{type}, ip #{ip}, port #{port})"
           when :selenium_chrome
             # remember, you still trackable because of webrtc enabled https://ipleak.net/
             # and in chrome there is no easy setting to disable it.
             # you can run chrome with a custom preconfigured profile with a special extention https://stackoverflow.com/a/44602360
             @driver_options.args << "--proxy-server=#{type}://#{ip}:#{port}"
+            Kimurai::Logger.debug "Session builder: enabled proxy for selenium_chrome (type #{type}, ip #{ip}, port #{port})"
           end
         else
-          Kimurai::Logger.debug "Session builder: Selenium don't allow to set proxy " \
-            "with authentication. Skipped this step."
+          Kimurai::Logger.error "Session builder: selenium don't allow to set proxy " \
+            "with authentication, skipped"
         end
       end
     end
@@ -49,9 +51,10 @@ module Kimurai
           when :selenium_chrome
             @driver_options.args << "--proxy-bypass-list=#{@proxy_bypass_list.join(";")}"
           end
+
+          Kimurai::Logger.debug "Session builder: enabled proxy_bypass_list for #{driver_name}"
         else
-          Kimurai::Logger.debug "Session builder: To use proxy_bypass_list you " \
-            "have to provide proxy list. Skipped."
+          Kimurai::Logger.error "Session builder: To set proxy_bypass_list, session_proxy is required, skipped"
         end
       end
     end
@@ -60,6 +63,9 @@ module Kimurai
     def check_session_proxy_for_poltergeist_mechanize
       if @session_proxy && [:mechanize, :poltergeist].include?(driver_type)
         @session.set_proxy(@session_proxy)
+
+        ip, port, type = @session_proxy.values
+        Kimurai::Logger.debug "Session builder: enabled proxy for #{driver_name} (type #{type}, ip #{ip}, port #{port})"
       end
     end
   end

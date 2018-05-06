@@ -19,6 +19,7 @@ Gem::Specification.new do |spec|
   spec.bindir        = "exe"
   spec.executables   = "kimurai"
   spec.require_paths = ["lib"]
+  # spec.required_ruby_version = ">= 2.5.0"
 
   spec.add_dependency "activesupport"
   spec.add_dependency "capybara", ">= 2.15", "< 4.0"

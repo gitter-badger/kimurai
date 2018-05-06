@@ -11,6 +11,8 @@ module Kimurai
         when :selenium_chrome
           @driver_options.args << "--user-agent='#{@session_user_agent}'"
         end
+
+        Kimurai::Logger.debug "Session builder: enabled custom useragent for #{driver_name}"
       end
     end
 
@@ -18,12 +20,16 @@ module Kimurai
     def check_session_user_agent_for_poltergeist_mechanize
       if @session_user_agent && [:mechanize, :poltergeist].include?(driver_type)
         @session.add_header("User-Agent", @session_user_agent)
+
+        Kimurai::Logger.debug "Session builder: enabled custom useragent for #{driver_name}"
       end
     end
 
     def check_headers_for_poltergeist_mechanize
       if @session_headers && [:mechanize, :poltergeist].include?(driver_type)
         @session.set_headers(@session_headers)
+
+        Kimurai::Logger.debug "Session builder: enabled custom headers for #{driver_name}"
       end
     end
   end

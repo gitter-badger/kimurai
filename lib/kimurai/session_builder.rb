@@ -1,23 +1,16 @@
-require "capybara"
+require 'capybara'
 
-require_relative "session_builder/errors"
-require_relative "session_builder/headers"
-require_relative "session_builder/proxy"
-require_relative "session_builder/ssl"
-require_relative "session_builder/window_size"
+require_relative 'session_builder/errors'
+require_relative 'session_builder/headers'
+require_relative 'session_builder/proxy'
+require_relative 'session_builder/ssl'
+require_relative 'session_builder/window_size'
 
 # add accept language option for selenium
 
 module Kimurai
   class SessionBuilder
     AVAILABLE_DRIVERS = [:mechanize, :poltergeist_phantomjs, :selenium_firefox, :selenium_chrome]
-
-    Capybara.configure do |config|
-      config.run_server = false
-      config.default_selector = :xpath
-      config.default_max_wait_time = 15
-      config.ignore_hidden_elements = false
-    end
 
     attr_reader :driver_name, :driver_type
 
@@ -61,7 +54,7 @@ module Kimurai
           Logger.debug "Session builder: created a session using custom driver #{driver_name}"
           return Capybara::Session.new(driver_name)
         else
-          raise ConfigurationError, "Driver is not supported: #{driver_name}"
+          raise ConfigurationError, "Driver is not defined `#{driver_name}`"
         end
       end
 
@@ -80,10 +73,12 @@ module Kimurai
 
         check_headless_mode_for_selenium
         check_disable_images_for_selenium_poltergeist
+
         create_driver(app)
       end
 
       @session = Capybara::Session.new(driver_name)
+      Kimurai::Logger.debug "Session builder: created session instance"
 
       check_window_size_for_selenium_firefox
 
@@ -101,6 +96,56 @@ module Kimurai
 
     private
 
+    def create_driver(app)
+      driver_instance =
+        case driver_name
+        when :selenium_firefox
+          Capybara::Selenium::Driver.new(app, browser: :firefox, options: @driver_options)
+        when :selenium_chrome
+          Capybara::Selenium::Driver.new(app, browser: :chrome, options: @driver_options)
+        when :poltergeist_phantomjs
+          Capybara::Poltergeist::Driver.new(app, @driver_options)
+        when :mechanize
+          Capybara::Mechanize::Driver.new("app")
+        end
+
+      Kimurai::Logger.debug "Session builder: created driver instance (#{driver_name})"
+      driver_instance
+    end
+
+    def create_driver_options
+      case driver_name
+      when :selenium_firefox
+        @driver_options = Selenium::WebDriver::Firefox::Options.new
+        @driver_options.profile = Selenium::WebDriver::Firefox::Profile.new
+        # default to open all in tabs, not windows (UPD didn't work)
+        @driver_options.profile["browser.link.open_newwindow"] = 3
+      when :selenium_chrome
+        default_args = %w[--disable-gpu --no-sandbox --disable-translate]
+        @driver_options = Selenium::WebDriver::Chrome::Options.new(args: default_args)
+      when :poltergeist_phantomjs
+        @driver_options = {
+          js_errors: false,
+          debug: false,
+          inspector: false,
+          phantomjs_options: []
+        }
+      end
+    end
+
+    def require_driver
+      case driver_type
+      when :selenium
+        require 'selenium-webdriver'
+      when :poltergeist
+        require 'capybara/poltergeist'
+      when :mechanize
+        require 'capybara/mechanize'
+      end
+
+      Kimurai::Logger.debug "Session builder: required driver gem (#{driver_type})"
+    end
+
     def check_default_cookies
       if @default_cookies
         if driver_type == :selenium
@@ -112,6 +157,8 @@ module Kimurai
         else
           @session.set_cookies(@default_cookies)
         end
+
+        Kimurai::Logger.debug "Session builder: enabled default cookies for #{driver_name}"
       end
     end
 
@@ -125,58 +172,15 @@ module Kimurai
         when :poltergeist_phantomjs
           @driver_options[:phantomjs_options] << "--load-images=no"
         end
+
+        Kimurai::Logger.debug "Session builder: enabled disable_images for #{driver_name}"
       end
     end
 
     def check_headless_mode_for_selenium
       if (ENV["HEADLESS"] != "false" || ENV["KIMURAI_ENV"] == "production") && driver_type == :selenium
         @driver_options.args << "--headless"
-      end
-    end
-
-    def create_driver(app)
-      case driver_name
-      when :selenium_firefox
-        Capybara::Selenium::Driver.new(app, browser: :firefox, options: @driver_options)
-      when :selenium_chrome
-        Capybara::Selenium::Driver.new(app, browser: :chrome, options: @driver_options)
-      when :poltergeist_phantomjs
-        Capybara::Poltergeist::Driver.new(app, @driver_options)
-      when :mechanize
-        Capybara::Mechanize::Driver.new("app")
-      end
-    end
-
-    def create_driver_options
-      case driver_name
-      when :selenium_firefox
-        @driver_options = Selenium::WebDriver::Firefox::Options.new
-        @driver_options.profile = Selenium::WebDriver::Firefox::Profile.new
-
-        # default to open all in tabs, not windows
-        @driver_options.profile["browser.link.open_newwindow"] = 3
-      when :selenium_chrome
-        # app profile, see examples in google_bot
-        @driver_options = Selenium::WebDriver::Chrome::Options.new(args: %w[--disable-gpu --no-sandbox --disable-translate])
-      when :poltergeist_phantomjs
-        @driver_options = {
-          js_errors: false,
-          debug: false,
-          inspector: false,
-          # phantomjs_logger: Logger.new('/dev/null'),
-          phantomjs_options: []
-        }
-      end
-    end
-
-    def require_driver
-      case driver_type
-      when :selenium
-        require "selenium-webdriver"
-      when :poltergeist
-        require "capybara/poltergeist"
-      when :mechanize
-        require "capybara/mechanize"
+        Kimurai::Logger.debug "Session builder: enabled headless mode for #{driver_name}"
       end
     end
 

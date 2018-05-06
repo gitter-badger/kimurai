@@ -5,6 +5,7 @@ PATH
       activesupport
       capybara (>= 2.15, < 4.0)
       capybara-mechanize
+      get_process_mem_pss_fixed
       murmurhash3
       nokogiri
       poltergeist
@@ -34,11 +35,11 @@ GEM
     childprocess (0.9.0)
       ffi (~> 1.0, >= 1.0.11)
     cliver (0.3.2)
-    coderay (1.1.2)
     concurrent-ruby (1.0.5)
     domain_name (0.5.20180417)
       unf (>= 0.0.5, < 1.0.0)
     ffi (1.9.23)
+    get_process_mem_pss_fixed (0.2.2)
     http-cookie (1.0.3)
       domain_name (~> 0.5)
     i18n (1.0.1)
@@ -52,7 +53,6 @@ GEM
       nokogiri (~> 1.6)
       ntlm-http (~> 0.1, >= 0.1.1)
       webrobots (>= 0.0.9, < 0.2)
-    method_source (0.9.0)
     mime-types (3.1)
       mime-types-data (~> 3.2015)
     mime-types-data (3.2016.0521)
@@ -65,15 +65,12 @@ GEM
     nokogiri (1.8.2)
       mini_portile2 (~> 2.3.0)
     ntlm-http (0.1.1)
-    poltergeist (1.17.0)
-      capybara (~> 2.1)
+    poltergeist (1.18.0)
+      capybara (>= 2.1, < 4)
       cliver (~> 0.3.1)
       websocket-driver (>= 0.2.0)
-    pry (0.11.3)
-      coderay (~> 1.1.0)
-      method_source (~> 0.9.0)
     public_suffix (3.0.2)
-    rack (2.0.4)
+    rack (2.0.5)
     rack-test (1.0.0)
       rack (>= 1.0, < 3)
     rake (10.5.0)
@@ -102,7 +99,6 @@ DEPENDENCIES
   bundler (~> 1.16)
   kimurai!
   minitest (~> 5.0)
-  pry
   rake (~> 10.0)
 
 BUNDLED WITH

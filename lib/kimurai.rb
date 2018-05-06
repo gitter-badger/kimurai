@@ -1,6 +1,8 @@
 require "active_support"
 require "active_support/core_ext"
 
+require "kimurai/core_ext/process"
+
 require "kimurai/version"
 require "kimurai/logger"
 require "kimurai/stats"

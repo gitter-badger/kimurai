@@ -60,13 +60,15 @@ module Kimurai
     end
 
     # parallel
-
-    def parse_with_threads(listings, threads, driver: self.class.driver, method_name:)
-      parts = listings.in_groups(threads, false)
+    # upd fix to http://phrogz.net/programmingruby/tut_threads.html
+    # and here https://www.sitepoint.com/threads-ruby/
+    # use do |my_part|
+    def parse_with_threads(listings, size:, driver: self.class.driver, method_name:)
+      parts = listings.in_groups(size, false)
       threads = []
 
       parts.each do |part|
-        threads << Thread.new(part) do
+        threads << Thread.new(part) do |part|
           crawler = self.class.new(driver: driver)
 
           part.each do |listing_data|

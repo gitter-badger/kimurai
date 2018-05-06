@@ -2,6 +2,7 @@ require "nokogiri"
 require "murmurhash3"
 require "capybara"
 require "capybara/mechanize"
+require "get_process_mem_pss_fixed"
 
 require_relative "capybara_session/cookies"
 require_relative "capybara_session/headers"
@@ -88,9 +89,9 @@ module Capybara
     def resize_to(width, height)
       case driver_type
       when :poltergeist
-        current_window.resize_to(wigth, height)
+        current_window.resize_to(width, height)
       when :selenium
-        current_window.resize_to(wigth, height)
+        current_window.resize_to(width, height)
       when :mechanize
         Kimurai::Logger.debug "Session: mechanize driver don't support this method. Skipped."
       end
@@ -109,6 +110,27 @@ module Capybara
       else
         :unknown
       end
+    end
+
+    # upd do it only once when creating session
+    def session_pid
+      @session_pid ||=
+        case driver_type
+        when :poltergeist
+          driver.browser.client.pid
+        when :selenium
+          webdriver_port = driver.browser.send(:bridge).http.instance_variable_get("@http").port
+          `lsof -i tcp:#{webdriver_port} -t`&.strip&.to_i
+        when :mechanize
+          Kimurai::Logger.error "Not supported"
+        end
+    end
+
+    def current_memory
+      pid = session_pid
+      all = Process.descendant_processes(pid) << pid
+      # all.map { |pid| Memstat::Proc::Smaps.new(pid: pid).pss / 1024 }.sum
+      all.map { |pid| GetProcessMem.new(pid).linux_pss_memory }.sum
     end
   end
 end

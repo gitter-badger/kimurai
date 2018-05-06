@@ -18,7 +18,7 @@ require 'kimurai/cli'
 
 module Kimurai
   def self.env
-    @env ||= ENV["KIMURAI_ENV"].presence || "development"
+    @env ||= ENV.fetch("KIMURAI_ENV", "development")
   end
 
   def self.root

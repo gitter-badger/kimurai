@@ -1,21 +1,27 @@
-require "active_support"
-require "active_support/core_ext"
+require 'active_support'
+require 'active_support/core_ext'
 
-require "kimurai/core_ext/process"
+require 'pathname'
 
-require "kimurai/version"
-require "kimurai/logger"
-require "kimurai/stats"
+require 'kimurai/core_ext/process'
 
-require "kimurai/capybara_session"
-require "kimurai/session_builder"
-require "kimurai/pipeline"
+require 'kimurai/version'
+require 'kimurai/logger'
+require 'kimurai/stats'
 
-require "kimurai/base"
-require "kimurai/cli"
+require 'kimurai/capybara_session'
+require 'kimurai/session_builder'
+require 'kimurai/pipeline'
+
+require 'kimurai/base'
+require 'kimurai/cli'
 
 module Kimurai
   def self.env
-    ENV["KIMURAI_ENV"].presence || "development"
+    @env ||= ENV["KIMURAI_ENV"].presence || "development"
+  end
+
+  def self.root
+    @root ||= Pathname.new('..').expand_path(File.dirname(__FILE__))
   end
 end

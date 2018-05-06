@@ -7,9 +7,9 @@ module Kimurai
       require './config/boot'
 
       crawler_class = Base.descendants.find { |crawler| crawler.name == crawler_name }
+      pipelines = crawler_class.pipelines.map { |pipeline| pipeline.to_s.classify.constantize }
 
       # call .open_crawler method for each crawler's pipeline
-      pipelines = crawler_class.pipelines.map { |pipeline| pipeline.to_s.classify.constantize }
       pipelines.each { |pipeline| pipeline.open_crawler if pipeline.respond_to? :open_crawler }
 
       # define at_exit proc with calling .close_crawler method

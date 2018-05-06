@@ -13,12 +13,10 @@ module Capybara
             Kimurai::Logger.debug "Session: setting http proxy: #{proxy[:ip]}:#{proxy[:port]}"
             driver.browser.agent.set_proxy(proxy[:ip], proxy[:port], proxy[:user], proxy[:password])
           else
-            Kimurai::Logger.debug "Session: mechanize driver only supports http proxy. Skipped this step."
+            Kimurai::Logger.warn "Session: mechanize driver only supports http proxy, skipped"
           end
         when :selenium
-          message = "Session: can't set proxy: Selenium don't allow to set proxy dynamically. " \
-            "Only while creating a new instance. Skipped this step."
-          Kimurai::Logger.debug message
+          Kimurai::Logger.warn "Session: selenium don't allow to set proxy dynamically, skipped"
         end
       else
         raise "Session: Wrong type of proxy #{proxy[:type]}. Allowed only http and sock5."

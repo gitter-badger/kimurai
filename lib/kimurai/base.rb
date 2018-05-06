@@ -63,6 +63,7 @@ module Kimurai
     # upd fix to http://phrogz.net/programmingruby/tut_threads.html
     # and here https://www.sitepoint.com/threads-ruby/
     # use do |my_part|
+    # and add custom options ()
     def parse_with_threads(listings, size:, driver: self.class.driver, method_name:)
       parts = listings.in_groups(size, false)
       threads = []
@@ -75,7 +76,7 @@ module Kimurai
             crawler.send(method_name, listing_data)
           end
         end
-        sleep 2
+        sleep 1
       end
 
       threads.each(&:join)

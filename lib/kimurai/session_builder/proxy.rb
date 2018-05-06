@@ -30,14 +30,13 @@ module Kimurai
             Kimurai::Logger.debug "Session builder: enabled proxy for selenium_firefox (type #{type}, ip #{ip}, port #{port})"
           when :selenium_chrome
             # remember, you still trackable because of webrtc enabled https://ipleak.net/
-            # and in chrome there is no easy setting to disable it.
+            # and in chrome there is no easy way to disable it.
             # you can run chrome with a custom preconfigured profile with a special extention https://stackoverflow.com/a/44602360
             @driver_options.args << "--proxy-server=#{type}://#{ip}:#{port}"
             Kimurai::Logger.debug "Session builder: enabled proxy for selenium_chrome (type #{type}, ip #{ip}, port #{port})"
           end
         else
-          Kimurai::Logger.error "Session builder: selenium don't allow to set proxy " \
-            "with authentication, skipped"
+          Kimurai::Logger.warn "Session builder: selenium don't allow proxy with authentication, skipped"
         end
       end
     end
@@ -54,7 +53,7 @@ module Kimurai
 
           Kimurai::Logger.debug "Session builder: enabled proxy_bypass_list for #{driver_name}"
         else
-          Kimurai::Logger.error "Session builder: To set proxy_bypass_list, session_proxy is required, skipped"
+          Kimurai::Logger.warn "Session builder: To set proxy_bypass_list, session_proxy is required, skipped"
         end
       end
     end
@@ -64,8 +63,9 @@ module Kimurai
       if @session_proxy && [:mechanize, :poltergeist].include?(driver_type)
         @session.set_proxy(@session_proxy)
 
-        ip, port, type = @session_proxy.values
-        Kimurai::Logger.debug "Session builder: enabled proxy for #{driver_name} (type #{type}, ip #{ip}, port #{port})"
+        ip, port, type, user, password = @session_proxy.values
+        Kimurai::Logger.debug "Session builder: enabled proxy for #{driver_name} " \
+          "(type: #{type}, ip: #{ip}, port: #{port}, user: #{user}, password: #{password})"
       end
     end
   end

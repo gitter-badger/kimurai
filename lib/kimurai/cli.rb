@@ -1,19 +1,18 @@
-require "thor"
+require 'thor'
 
 module Kimurai
   class CLI < Thor
-    desc "start", "starts the crawler by crawler name"
+    desc "start", "Starts the crawler by crawler name"
     def start(crawler_name)
-      require "./config/boot"
+      require './config/boot'
 
       crawler_class = Base.descendants.find { |crawler| crawler.name == crawler_name }
       crawler_class.new.parse
     end
 
-    desc "list", "List all crawlers in the project"
+    desc "list", "Lists all crawlers in the project"
     def list
-      require './crawlers/application_crawler'
-      require_all "crawlers"
+      require './config/boot'
 
       Base.descendants.each do |crawler|
         puts crawler.name if crawler&.name

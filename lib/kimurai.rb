@@ -1,8 +1,6 @@
 require 'active_support'
 require 'active_support/core_ext'
-
 require 'pathname'
-require 'require_all'
 
 require 'kimurai/core_ext/process'
 

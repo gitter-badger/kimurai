@@ -17,10 +17,10 @@ require 'kimurai/cli'
 
 module Kimurai
   def self.env
-    @env ||= ENV.fetch("KIMURAI_ENV", "development")
+    ENV.fetch("KIMURAI_ENV", "development")
   end
 
   def self.root
-    @root ||= Pathname.new('..').expand_path(File.dirname(__FILE__))
+    Pathname.new('..').expand_path(File.dirname(__FILE__))
   end
 end

@@ -3,8 +3,6 @@ require 'active_support/core_ext'
 require 'pathname'
 require 'concurrent'
 
-require 'kimurai/core_ext/process'
-
 require 'kimurai/version'
 require 'kimurai/logger'
 require 'kimurai/stats'

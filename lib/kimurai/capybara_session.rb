@@ -2,8 +2,9 @@ require "nokogiri"
 require "murmurhash3"
 require "capybara"
 require "capybara/mechanize"
-require "get_process_mem_pss_fixed"
 
+require_relative "capybara_session/driver"
+require_relative "capybara_session/memory"
 require_relative "capybara_session/cookies"
 require_relative "capybara_session/headers"
 require_relative "capybara_session/proxy"
@@ -12,49 +13,40 @@ require_relative "capybara_session/proxy"
 
 module Capybara
   class Session
-    attr_accessor :change_user_agent_before_request,
-                  :change_proxy_before_request,
-                  :clear_cookies_before_request
+    def self.global_stats
+      @global_stats ||= { requests: 0, responses: 0 }
+    end
+
+    def stats
+      @stats ||= { requests: 0, responses: 0, memory: [] }
+    end
+
+    # attr_accessor :change_user_agent_before_request,
+    #               :change_proxy_before_request,
+    #               :clear_cookies_before_request
 
     alias_method :original_visit, :visit
     def visit(visit_uri)
-      Kimurai::Stats[:main][:requests] += 1
-      Kimurai::Logger.info "Session: started get request to: #{visit_uri}"
+      if current_memory > 290_000
+        recreate_driver!
+      end
+
+      self.class.global_stats[:requests] += 1
+      stats[:requests] += 1
+      logger.info "Session: started get request to: #{visit_uri}"
 
       original_visit(visit_uri)
 
-      Kimurai::Stats[:main][:responses] += 1
-      Kimurai::Logger.info "Session: finished get request to: #{visit_uri}"
+      self.class.global_stats[:responses] += 1
+      stats[:responses] += 1
+      logger.info "Session: finished get request to: #{visit_uri}"
+    rescue => e
+      raise e
     ensure
-      Kimurai::Stats.print(:main)
+      logger.info "Stats global: requests: #{self.class.global_stats[:requests]}, responses: #{self.class.global_stats[:responses]}"
 
-      (Kimurai::Stats[:memory][Thread.current.object_id] ||= []) << current_memory
-      Kimurai::Stats.print(:memory)
-    end
-
-    # allow iterate through pagination using same instance and new window,
-    # and then auto close window
-    # to do: set restriction to mechanize
-    def visit_in_new_window(url)
-      within_window(open_new_window) do
-        visit(url)
-
-        yield
-
-        current_window.close
-      end
-    end
-
-    # pass a lambda as an action
-    # ToDo: merge visit_in_new_window into this one
-    def within_new_window_by(action:)
-      opened_window = window_opened_by { action.call }
-      within_window(opened_window) do
-
-        yield
-
-        current_window.close
-      end
+      stats[:memory] << current_memory
+      logger.info "Stats: current_memory: #{stats[:memory].last}"
     end
 
     # default Content-Type of request data is 'application/x-www-form-urlencoded'.
@@ -62,18 +54,46 @@ module Capybara
     # as 'application/json'.
     def post_request(url, data:, headers: { "Content-Type" => "application/x-www-form-urlencoded" })
       if driver_type == :mechanize
-        Kimurai::Stats[:main][:requests] += 1
-        Kimurai::Logger.info "Session: started post request to: #{visit_uri}"
+        begin
+          self.class.global_stats[:requests] += 1
+          stats[:requests] += 1
+          logger.info "Session: started post request to: #{visit_uri}"
 
-        driver.browser.agent.post(url, data, headers)
+          driver.browser.agent.post(url, data, headers)
 
-        Kimurai::Stats[:main][:responses] += 1
-        Kimurai::Logger.info "Session: finished post request to: #{visit_uri}"
+          self.class.global_stats[:responses] += 1
+          stats[:responses] += 1
+          logger.info "Session: finished post request to: #{visit_uri}"
+        ensure
+          logger.info "Stats global: requests: #{self.class.global_stats[:requests]}, responses: #{self.class.global_stats[:responses]}"
+        end
       else
         raise "Not implemented in this driver"
       end
-    ensure
-      Kimurai::Stats.print(:main)
+    end
+
+    # pass a lambda as an action or url to visit
+    # to do: set restriction to mechanize
+    # notice: not safe with #recreate_driver! (any interactions with more
+    # then one window)
+    def within_new_window_by(action: nil, url: nil)
+      case
+      when action
+        opened_window = window_opened_by { action.call }
+        within_window(opened_window) do
+          yield
+          current_window.close
+        end
+      when url
+        within_window(open_new_window) do
+          visit(url)
+
+          yield
+          current_window.close
+        end
+      else
+        raise "Specify action or url"
+      end
     end
 
     def response
@@ -100,42 +120,9 @@ module Capybara
       end
     end
 
-    def driver_type
-      @driver_type ||=
-        case
-        when driver.class.to_s.match?(/poltergeist/i)
-          :poltergeist
-        when driver.class.to_s.match?(/mechanize/i)
-          :mechanize
-        when driver.class.to_s.match?(/selenium/i)
-          :selenium
-        else
-          :unknown
-        end
-    end
-
-    # upd do it only once when creating session
-    def session_pid
-      @session_pid ||=
-        case driver_type
-        when :poltergeist
-          driver.browser.client.pid
-        when :selenium
-          webdriver_port = driver.browser.send(:bridge).http.instance_variable_get("@http").port
-          `lsof -i tcp:#{webdriver_port} -t`&.strip&.to_i
-        when :mechanize
-          Kimurai::Logger.error "Not supported"
-        end
-    end
-
-    def current_memory
-      pid = session_pid
-      all = Process.descendant_processes(pid) << pid
-      # all.map { |pid| Memstat::Proc::Smaps.new(pid: pid).pss / 1024 }.sum
-      all.map { |pid| GetProcessMem.new(pid).linux_pss_memory }.sum
-
-    rescue => e
-      binding.pry
+    private
+    def logger
+      @logger ||= Logger.new(STDOUT, formatter: Kimurai::LoggerFormatter)
     end
   end
 end

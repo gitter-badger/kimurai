@@ -27,6 +27,9 @@ module Capybara
       Kimurai::Logger.info "Session: finished get request to: #{visit_uri}"
     ensure
       Kimurai::Stats.print(:main)
+
+      (Kimurai::Stats[:memory][Thread.current.object_id] ||= []) << current_memory
+      Kimurai::Stats.print(:memory)
     end
 
     # allow iterate through pagination using same instance and new window,
@@ -130,6 +133,9 @@ module Capybara
       all = Process.descendant_processes(pid) << pid
       # all.map { |pid| Memstat::Proc::Smaps.new(pid: pid).pss / 1024 }.sum
       all.map { |pid| GetProcessMem.new(pid).linux_pss_memory }.sum
+
+    rescue => e
+      binding.pry
     end
   end
 end

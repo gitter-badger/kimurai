@@ -18,15 +18,15 @@ module Capybara
 
     alias_method :original_visit, :visit
     def visit(visit_uri)
-      Kimurai::Stats[:requests] += 1
+      Kimurai::Stats[:main][:requests] += 1
       Kimurai::Logger.info "Session: started get request to: #{visit_uri}"
 
       original_visit(visit_uri)
 
-      Kimurai::Stats[:responses] += 1
+      Kimurai::Stats[:main][:responses] += 1
       Kimurai::Logger.info "Session: finished get request to: #{visit_uri}"
     ensure
-      Kimurai::Stats.print
+      Kimurai::Stats.print(:main)
     end
 
     # allow iterate through pagination using same instance and new window,
@@ -59,18 +59,18 @@ module Capybara
     # as 'application/json'.
     def post_request(url, data:, headers: { "Content-Type" => "application/x-www-form-urlencoded" })
       if driver_type == :mechanize
-        Kimurai::Stats[:requests] += 1
+        Kimurai::Stats[:main][:requests] += 1
         Kimurai::Logger.info "Session: started post request to: #{visit_uri}"
 
         driver.browser.agent.post(url, data, headers)
 
-        Kimurai::Stats[:responses] += 1
+        Kimurai::Stats[:main][:responses] += 1
         Kimurai::Logger.info "Session: finished post request to: #{visit_uri}"
       else
         raise "Not implemented in this driver"
       end
     ensure
-      Kimurai::Stats.print
+      Kimurai::Stats.print(:main)
     end
 
     def response
@@ -98,18 +98,17 @@ module Capybara
     end
 
     def driver_type
-      driver_class = driver.class.to_s
-
-      case
-      when driver_class.match?(/poltergeist/i)
-        :poltergeist
-      when driver_class.match?(/mechanize/i)
-        :mechanize
-      when driver_class.match?(/selenium/i)
-        :selenium
-      else
-        :unknown
-      end
+      @driver_type ||=
+        case
+        when driver.class.to_s.match?(/poltergeist/i)
+          :poltergeist
+        when driver.class.to_s.match?(/mechanize/i)
+          :mechanize
+        when driver.class.to_s.match?(/selenium/i)
+          :selenium
+        else
+          :unknown
+        end
     end
 
     # upd do it only once when creating session

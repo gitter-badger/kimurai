@@ -45,18 +45,18 @@ module Kimurai
     end
 
     def pipeline_item(item)
-      Stats[:processed_items] += 1
+      Stats[:main][:processed_items] += 1
 
       @pipelines.each do |pipeline|
         item = pipeline.process_item(hash)
       end
 
-      Stats[:saved_items] += 1
+      Stats[:main][:saved_items] += 1
     rescue => e
       Logger.error "Pipeline: dropped item #{e.receiver if e.respond_to?(:receiver)}: " \
         "#{e.message}\n#{e.inspect}\n#{e.backtrace}"
     ensure
-      Stats.print#(:main)
+      Stats.print(:main)
     end
 
     # parallel

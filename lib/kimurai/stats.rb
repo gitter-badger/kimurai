@@ -1,10 +1,12 @@
 module Kimurai
   class Stats
     @info = {
-      requests: 0,
-      responses: 0,
-      processed_items: 0,
-      saved_items: 0
+      main: {
+        requests: 0,
+        responses: 0,
+        processed_items: 0,
+        saved_items: 0
+      }
     }
 
     class << self
@@ -18,9 +20,18 @@ module Kimurai
         info[key] = value
       end
 
-      def print
-        Logger.info "Stats: requests: #{@info[:requests]}, responses: #{@info[:responses]}, " \
-          "processed_items: #{@info[:processed_items]}, saved_items: #{@info[:saved_items]}"
+      # def main
+      #   @info[:main]
+      # end
+
+      def print(type)
+        case type
+        when :main
+        Logger.info "Stats: requests: #{@info[:main][:requests]}, responses: #{@info[:main][:responses]}, " \
+          "processed_items: #{@info[:main][:processed_items]}, saved_items: #{@info[:main][:saved_items]}"
+        else
+          puts "There is no type #{type} for stats"
+        end
       end
     end
   end

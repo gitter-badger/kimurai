@@ -76,13 +76,13 @@ module Kimurai
 
     ###
 
-    def self.open_crawler
-      puts "From open crawler"
-    end
+    # def self.open_crawler
+    #   puts "From open crawler"
+    # end
 
-    def self.close_crawler
-      puts "From close crawler"
-    end
+    # def self.close_crawler
+    #   puts "From close crawler"
+    # end
 
     ###
 
@@ -106,8 +106,9 @@ module Kimurai
     def pipeline_item(item)
       Stats[:main][:processed_items] += 1
 
+      # check here if item valid
       @pipelines.each do |pipeline|
-        item = pipeline.process_item(hash)
+        item = pipeline.process_item(item)
       end
 
       Stats[:main][:saved_items] += 1
@@ -130,6 +131,7 @@ module Kimurai
         threads << Thread.new(part) do |part|
           crawler = self.class.new(driver: driver)
 
+          # rename listing_data
           part.each do |listing_data|
             crawler.send(method_name, listing_data)
           end

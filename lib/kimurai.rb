@@ -5,7 +5,6 @@ require 'concurrent'
 
 require 'kimurai/version'
 require 'kimurai/logger'
-require 'kimurai/stats'
 
 require 'kimurai/capybara_session'
 require 'kimurai/session_builder'

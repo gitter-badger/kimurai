@@ -12,6 +12,10 @@ module Kimurai
   class SessionBuilder
     AVAILABLE_DRIVERS = [:mechanize, :poltergeist_phantomjs, :selenium_firefox, :selenium_chrome]
 
+    class << self
+      attr_accessor :virtual_display
+    end
+
     attr_reader :driver_name, :driver_type
 
     def initialize(driver, options: {})
@@ -43,6 +47,8 @@ module Kimurai
         list = options[:user_agents_list].presence
         list.sample if list
       end
+
+      @conf[:headless_mode] = options[:headless_mode].presence
 
       @conf[:disable_images] = options[:disable_images].presence
 
@@ -213,8 +219,25 @@ module Kimurai
 
     def check_headless_mode_for_selenium
       if (ENV["HEADLESS"] != "false" || ENV["KIMURAI_ENV"] == "production") && driver_type == :selenium
-        @driver_options.args << "--headless"
-        Kimurai::Logger.debug "Session builder: enabled headless mode for #{driver_name}"
+        if @conf[:headless_mode] == :virtual_display
+          # https://www.rubydoc.info/gems/headless
+          # It's enough to add one virtual display instance for all capybara instances
+          # We don't need to create virtual display for each session instance
+          unless self.class.virtual_display
+            require 'headless'
+            self.class.virtual_display = Headless.new
+            self.class.virtual_display.start
+
+            at_exit do
+              self.class.virtual_display.destroy
+              Kimurai::Logger.debug "Session builder: destroyed virtual_display instance"
+            end
+          end
+          Kimurai::Logger.debug "Session builder: enabled virtual_display headless mode for #{driver_name}"
+        else
+          @driver_options.args << "--headless"
+          Kimurai::Logger.debug "Session builder: enabled native headless mode for #{driver_name}"
+        end
       end
     end
 

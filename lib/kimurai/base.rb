@@ -1,3 +1,5 @@
+require_relative 'base/stats'
+
 module Kimurai
   class Base
     class << self
@@ -60,7 +62,7 @@ module Kimurai
           pipeline.close_crawler if pipeline.respond_to? :close_crawler
         rescue => e
           # ? # or create separate at_exit for each pipeline
-          Logger.error "There is an error in pipeline while trying to call .close_crawler method: #{e.class}, #{e.message}"
+          Logger.error "Crawler: there is an error in pipeline while trying to call .close_crawler method: #{e.class}, #{e.message}"
         end
       end
 
@@ -71,7 +73,8 @@ module Kimurai
       @status = :failed
       raise e
     ensure
-      puts "Closed crawler with status: #{status}"
+      message = "Crawler: closed with status: #{status}"
+      failed? ? Logger.error message : Logger.info message
     end
 
     ###

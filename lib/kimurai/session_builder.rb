@@ -52,6 +52,9 @@ module Kimurai
 
       @conf[:session_options][:recreate][:if_memory_more_than] =
         options[:session_options][:recreate][:if_memory_more_than].presence
+
+      @conf[:session_options][:before_request][:clear_cookies] =
+        options[:session_options][:before_request][:clear_cookies].presence
     end
 
     def build
@@ -108,6 +111,7 @@ module Kimurai
       # other
       check_default_cookies
       check_recreate_if_memory_for_selenium_poltergeist
+      check_before_request_clear_cookies
       @session
     end
 
@@ -219,6 +223,13 @@ module Kimurai
         value = @conf[:session_options][:recreate][:if_memory_more_than]
         @session.options[:recreate_if_memory_more_than] = value
         Kimurai::Logger.debug "Session builder: enabled recreate_if_memory_more_than #{value} for #{driver_name} session"
+      end
+    end
+
+    def check_before_request_clear_cookies
+      if @conf[:session_options][:before_request][:clear_cookies]
+        @session.options[:before_request_clear_cookies] = true
+        Kimurai::Logger.debug "Session builder: enabled before_request_clear_cookies for #{driver_name} session"
       end
     end
   end

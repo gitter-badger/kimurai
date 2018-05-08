@@ -31,8 +31,16 @@ module Capybara
 
     alias_method :original_visit, :visit
     def visit(visit_uri)
-      if options[:recreate_if_memory_more_than] && current_memory > options[:recreate_if_memory_more_than]
-        recreate_driver!
+      if limit = options[:recreate_if_memory_more_than]# && current_memory > options[:recreate_if_memory_more_than]
+        memory = current_memory
+        if memory > limit
+          logger.debug "Session: limit (#{limit}) of current_memory (#{memory}) is exceeded"
+          recreate_driver!
+        end
+      end
+
+      if options[:before_request_clear_cookies]
+        clear_cookies!
       end
 
       self.class.global_stats[:requests] += 1

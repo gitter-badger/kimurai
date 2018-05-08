@@ -13,8 +13,8 @@ require_relative 'capybara_session/proxy'
 
 module Capybara
   class Session
-    def self.global_stats
-      @global_stats ||= { requests: 0, responses: 0 }
+    def self.global_visits
+      @global_visits ||= { requests: 0, responses: 0 }
     end
 
     def self.current_instances
@@ -43,22 +43,23 @@ module Capybara
         clear_cookies!
       end
 
-      self.class.global_stats[:requests] += 1
+      self.class.global_visits[:requests] += 1
       stats[:requests] += 1
       logger.info "Session: started get request to: #{visit_uri}"
 
       original_visit(visit_uri)
 
-      self.class.global_stats[:responses] += 1
+      self.class.global_visits[:responses] += 1
       stats[:responses] += 1
       logger.info "Session: finished get request to: #{visit_uri}"
     rescue => e
       raise e
     ensure
-      logger.info "Stats global: requests: #{self.class.global_stats[:requests]}, responses: #{self.class.global_stats[:responses]}"
+      # logger.info "Stats global: requests: #{self.class.global_visits[:requests]}, responses: #{self.class.global_visits[:responses]}"
+      Kimurai::Base::Stats.print(:visits)
 
       stats[:memory] << current_memory
-      logger.info "Stats: current_memory: #{stats[:memory].last}"
+      logger.info "Session: current_memory: #{stats[:memory].last}"
     end
 
     # default Content-Type of request data is 'application/x-www-form-urlencoded'.
@@ -67,17 +68,18 @@ module Capybara
     def post_request(url, data:, headers: { "Content-Type" => "application/x-www-form-urlencoded" })
       if driver_type == :mechanize
         begin
-          self.class.global_stats[:requests] += 1
+          self.class.global_visits[:requests] += 1
           stats[:requests] += 1
           logger.info "Session: started post request to: #{visit_uri}"
 
           driver.browser.agent.post(url, data, headers)
 
-          self.class.global_stats[:responses] += 1
+          self.class.global_visits[:responses] += 1
           stats[:responses] += 1
           logger.info "Session: finished post request to: #{visit_uri}"
         ensure
-          logger.info "Stats global: requests: #{self.class.global_stats[:requests]}, responses: #{self.class.global_stats[:responses]}"
+          # logger.info "Stats global: requests: #{self.class.global_visits[:requests]}, responses: #{self.class.global_visits[:responses]}"
+          Kimurai::Base::Stats.print(:visits)
         end
       else
         raise "Not implemented in this driver"

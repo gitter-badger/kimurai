@@ -1,4 +1,5 @@
 require_relative 'base/stats'
+require 'json'
 
 module Kimurai
   class Base
@@ -74,7 +75,7 @@ module Kimurai
       raise e
     ensure
       message = "Crawler: closed with status: #{status}"
-      failed? ? Logger.error message : Logger.info message
+      failed? ? Logger.error(message) : Logger.info(message)
     end
 
     ###
@@ -107,19 +108,20 @@ module Kimurai
     end
 
     def pipeline_item(item)
-      Stats[:main][:processed_items] += 1
+      Stats.items[:processed] += 1
 
       # check here if item valid
       @pipelines.each do |pipeline|
         item = pipeline.process_item(item)
       end
 
-      Stats[:main][:saved_items] += 1
+      Stats.items[:saved] += 1
+      Logger.info "Pipeline: saved item: #{item.to_json}"
     rescue => e
-      Logger.error "Pipeline: dropped item #{e.receiver if e.respond_to?(:receiver)}: " \
-        "#{e.message}\n#{e.inspect}\n#{e.backtrace}"
+      # to do inspect hash item
+      Logger.error "Pipeline: dropped item: #{e.inspect}: #{item}"
     ensure
-      Stats.print(:main)
+      Stats.print(:items)
     end
 
     # parallel

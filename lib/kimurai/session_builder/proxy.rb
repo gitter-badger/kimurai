@@ -4,12 +4,12 @@ module Kimurai
 
     # driver config methods
     def check_session_proxy_for_selenium
-      if @session_proxy && driver_type == :selenium
-        if @session_proxy[:user].nil? && @session_proxy[:password].nil?
-          unless ["http", "socks5"].include? @session_proxy[:type]
-            raise ConfigurationError, "Session builder: Wrong type of proxy #{@session_proxy[:type]}. Allowed only http and sock5."
+      if @conf[:session_proxy] && driver_type == :selenium
+        if @conf[:session_proxy][:user].nil? && @conf[:session_proxy][:password].nil?
+          unless ["http", "socks5"].include? @conf[:session_proxy][:type]
+            raise ConfigurationError, "Session builder: Wrong type of proxy #{@conf[:session_proxy][:type]}. Allowed only http and sock5."
           end
-          ip, port, type = @session_proxy.values
+          ip, port, type = @conf[:session_proxy].values
 
           case driver_name
           when :selenium_firefox
@@ -42,13 +42,13 @@ module Kimurai
     end
 
     def check_proxy_bypass_list_for_selenium
-      if @proxy_bypass_list && driver_type == :selenium
-        if @session_proxy
+      if @conf[:proxy_bypass_list] && driver_type == :selenium
+        if @conf[:session_proxy]
           case driver_name
           when :selenium_firefox
-            @driver_options.profile["network.proxy.no_proxies_on"] = @proxy_bypass_list.join(", ")
+            @driver_options.profile["network.proxy.no_proxies_on"] = @conf[:proxy_bypass_list].join(", ")
           when :selenium_chrome
-            @driver_options.args << "--proxy-bypass-list=#{@proxy_bypass_list.join(";")}"
+            @driver_options.args << "--proxy-bypass-list=#{@conf[:proxy_bypass_list].join(";")}"
           end
 
           Kimurai::Logger.debug "Session builder: enabled proxy_bypass_list for #{driver_name}"
@@ -60,10 +60,10 @@ module Kimurai
 
     # session instance methods
     def check_session_proxy_for_poltergeist_mechanize
-      if @session_proxy && [:mechanize, :poltergeist].include?(driver_type)
-        @session.set_proxy(@session_proxy)
+      if @conf[:session_proxy] && [:mechanize, :poltergeist].include?(driver_type)
+        @session.set_proxy(@conf[:session_proxy])
 
-        ip, port, type, user, password = @session_proxy.values
+        ip, port, type, user, password = @conf[:session_proxy].values
         Kimurai::Logger.debug "Session builder: enabled proxy for #{driver_name} " \
           "(type: #{type}, ip: #{ip}, port: #{port}, user: #{user}, password: #{password})"
       end

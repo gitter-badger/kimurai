@@ -1,13 +1,13 @@
-require "nokogiri"
-require "murmurhash3"
-require "capybara"
-require "capybara/mechanize"
+require 'nokogiri'
+require 'murmurhash3'
+require 'capybara'
+require 'capybara/mechanize'
 
-require_relative "capybara_session/driver"
-require_relative "capybara_session/memory"
-require_relative "capybara_session/cookies"
-require_relative "capybara_session/headers"
-require_relative "capybara_session/proxy"
+require_relative 'capybara_session/driver'
+require_relative 'capybara_session/memory'
+require_relative 'capybara_session/cookies'
+require_relative 'capybara_session/headers'
+require_relative 'capybara_session/proxy'
 
 # to do: check about methods namespace
 
@@ -17,17 +17,21 @@ module Capybara
       @global_stats ||= { requests: 0, responses: 0 }
     end
 
-    def stats
-      @stats ||= { requests: 0, responses: 0, memory: [] }
+    def self.current_instances
+      ObjectSpace.each_object(self).to_a
     end
 
-    # attr_accessor :change_user_agent_before_request,
-    #               :change_proxy_before_request,
-    #               :clear_cookies_before_request
+    def options
+      @options ||= {}
+    end
+
+    def stats
+      @stats ||= { requests: 0, responses: 0, memory: [0] }
+    end
 
     alias_method :original_visit, :visit
     def visit(visit_uri)
-      if current_memory > 290_000
+      if options[:recreate_if_memory_more_than] && current_memory > options[:recreate_if_memory_more_than]
         recreate_driver!
       end
 

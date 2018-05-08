@@ -21,31 +21,37 @@ module Kimurai
         raise ConfigurationError, message
       end
 
+      @conf = Hash.new { |l, k| l[k] = Hash.new(&l.default_proc) }
+
       @driver_name = driver
       @driver_type = parse_driver_type(driver)
-      require_driver
+      require_driver!
 
-      @window_size = options[:window_size].presence
+      @conf[:window_size] = options[:window_size].presence
 
-      @session_proxy = begin
+      @conf[:session_proxy] = begin
         list = options[:proxies_list].presence
         list.sample if list
       end
-      @proxy_bypass_list = options[:proxy_bypass_list].presence
+      @conf[:proxy_bypass_list] = options[:proxy_bypass_list].presence
 
-      @ssl_cert_path = options[:ssl_cert_path].presence
-      @ignore_ssl_errors = options[:ignore_ssl_errors].presence
+      @conf[:ssl_cert_path] = options[:ssl_cert_path].presence
+      @conf[:ignore_ssl_errors] = options[:ignore_ssl_errors].presence
 
-      @session_headers = options[:headers].presence
-      @session_user_agent = begin
+      @conf[:session_headers] = options[:headers].presence
+      @conf[:session_user_agent] = begin
         list = options[:user_agents_list].presence
         list.sample if list
       end
 
-      @disable_images = options[:disable_images].presence
+      @conf[:disable_images] = options[:disable_images].presence
 
-      @default_cookies = options[:cookies].presence
-      @selenium_url_for_default_cookies = options[:selenium_url_for_default_cookies].presence
+      @conf[:default_cookies] = options[:cookies].presence
+      @conf[:selenium_url_for_default_cookies] = options[:selenium_url_for_default_cookies].presence
+
+
+      @conf[:session_options][:recreate][:if_memory_more_than] =
+        options[:session_options][:recreate][:if_memory_more_than].presence
     end
 
     def build
@@ -61,16 +67,21 @@ module Kimurai
       Capybara.register_driver driver_name do |app|
         create_driver_options
 
+        # window size
         check_window_size_for_selenium_chrome_poltergeist
 
+        # proxy
         check_session_proxy_for_selenium
         check_proxy_bypass_list_for_selenium
 
+        # ssl
         check_ssl_cert_path_for_poltergeist
         check_ignore_ssl_errors_for_selenium_poltergeist
 
+        # headers
         check_session_user_agent_for_selenium
 
+        # other
         check_headless_mode_for_selenium
         check_disable_images_for_selenium_poltergeist
 
@@ -80,17 +91,23 @@ module Kimurai
       @session = Capybara::Session.new(driver_name)
       Kimurai::Logger.debug "Session builder: created session instance"
 
+      # window size
       check_window_size_for_selenium_firefox
 
+      # proxy
       check_session_proxy_for_poltergeist_mechanize
 
+      # ssl
       check_ssl_cert_path_for_mechanize
       check_ignore_ssl_errors_for_mechanize
 
+      # headers
       check_headers_for_poltergeist_mechanize
       check_session_user_agent_for_poltergeist_mechanize
 
+      # other
       check_default_cookies
+      check_recreate_if_memory_for_selenium_poltergeist
       @session
     end
 
@@ -133,7 +150,7 @@ module Kimurai
       end
     end
 
-    def require_driver
+    def require_driver!
       case driver_type
       when :selenium
         require 'selenium-webdriver'
@@ -146,16 +163,29 @@ module Kimurai
       Kimurai::Logger.debug "Session builder: required driver gem (#{driver_type})"
     end
 
+    def parse_driver_type(name)
+      case
+      when name.match?(/selenium/i)
+        :selenium
+      when name.match?(/poltergeist/i)
+        :poltergeist
+      when name.match?(/mechanize/i)
+        :mechanize
+      end
+    end
+
+    ###
+
     def check_default_cookies
-      if @default_cookies
+      if @conf[:default_cookies]
         if driver_type == :selenium
           error_message = "Please provide a visit url to set default cookies for selenium"
-          raise ConfigurationError, error_message unless @selenium_url_for_default_cookies
+          raise ConfigurationError, error_message unless @conf[:selenium_url_for_default_cookies]
 
-          @session.visit(@selenium_url_for_default_cookies)
-          @session.set_cookies(@default_cookies)
+          @session.visit(@conf[:selenium_url_for_default_cookies])
+          @session.set_cookies(@conf[:default_cookies])
         else
-          @session.set_cookies(@default_cookies)
+          @session.set_cookies(@conf[:default_cookies])
         end
 
         Kimurai::Logger.debug "Session builder: enabled default cookies for #{driver_name}"
@@ -163,7 +193,7 @@ module Kimurai
     end
 
     def check_disable_images_for_selenium_poltergeist
-      if @disable_images && [:selenium, :poltergeist].include?(driver_type)
+      if @conf[:disable_images] && [:selenium, :poltergeist].include?(driver_type)
         case driver_name
         when :selenium_firefox
           @driver_options.profile["permissions.default.image"] = 2
@@ -184,14 +214,11 @@ module Kimurai
       end
     end
 
-    def parse_driver_type(name)
-      case
-      when name.match?(/selenium/i)
-        :selenium
-      when name.match?(/poltergeist/i)
-        :poltergeist
-      when name.match?(/mechanize/i)
-        :mechanize
+    def check_recreate_if_memory_for_selenium_poltergeist
+      if @conf[:session_options][:recreate][:if_memory_more_than] && [:selenium, :poltergeist].include?(driver_type)
+        value = @conf[:session_options][:recreate][:if_memory_more_than]
+        @session.options[:recreate_if_memory_more_than] = value
+        Kimurai::Logger.debug "Session builder: enabled recreate_if_memory_more_than #{value} for #{driver_name} session"
       end
     end
   end

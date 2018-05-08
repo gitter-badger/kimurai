@@ -4,12 +4,12 @@ module Kimurai
 
     # driver config methods
     def check_window_size_for_selenium_chrome_poltergeist
-      if @window_size && [:poltergeist_phantomjs, :selenium_chrome].include?(driver_name)
+      if @conf[:window_size] && [:poltergeist_phantomjs, :selenium_chrome].include?(driver_name)
         case driver_name
         when :selenium_chrome
-          @driver_options.args << "--window-size=#{@window_size.join(",")}"
+          @driver_options.args << "--window-size=#{@conf[:window_size].join(",")}"
         when :poltergeist_phantomjs
-          @driver_options[:window_size] = @window_size
+          @driver_options[:window_size] = @conf[:window_size]
         end
 
         Kimurai::Logger.debug "Session builder: enabled window size for #{driver_name}"
@@ -18,8 +18,8 @@ module Kimurai
 
     # session instance methods
     def check_window_size_for_selenium_firefox
-      if @window_size && driver_name == :selenium_firefox
-        @session.resize_to(*@window_size)
+      if @conf[:window_size] && driver_name == :selenium_firefox
+        @session.resize_to(*@conf[:window_size])
 
         Kimurai::Logger.debug "Session builder: enabled window size for #{driver_name}"
       end

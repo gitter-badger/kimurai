@@ -141,23 +141,30 @@ module Kimurai
       Log.info "Stats items: processed: #{self.class.info[:items][:processed]}, saved: #{self.class.info[:items][:saved]}"
     end
 
-    # parallel
+    ###
+
+    def request_to(handler, type = :get, url:, data: {})
+      # todo: add post request option for mechanize
+      page.visit(url)
+      send(handler, { url: url, data: data })
+    end
+
     # http://phrogz.net/programmingruby/tut_threads.html
     # https://www.sitepoint.com/threads-ruby/
-    # and add custom options ()
-    def parse_with_threads(listings, size:, driver: self.class.driver, method_name:)
-      parts = listings.in_groups(size, false)
+    # to do, add optional post type here too
+    def in_parallel(handler, size, requests:, driver: self.class.driver, driver_options: {})
+      parts = requests.in_groups(size, false)
       threads = []
 
       parts.each do |part|
         threads << Thread.new(part) do |part|
-          crawler = self.class.new(driver: driver)
+          crawler = self.class.new(driver: driver, options: driver_options)
 
-          # rename listing_data
-          part.each do |listing_data|
-            crawler.send(method_name, listing_data)
+          part.each do |request_data|
+            crawler.send(:request_to, handler, request_data)
           end
         end
+        # add delay between starting threads
         sleep 1
       end
 

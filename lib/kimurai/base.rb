@@ -1,25 +1,40 @@
 require_relative 'base/stats'
 require 'json'
+require 'concurrent'
 
 module Kimurai
   class Base
     class << self
       attr_reader :name
-      attr_accessor :status
+    end
+
+    def self.info
+      @info ||= {
+        start_time: Time.new,
+        stop_time: nil,
+        running_time: nil,
+        visits: Capybara::Session.global_visits,
+        items: {
+          processed: 0,
+          saved: 0,
+          drop_errors: {}
+        },
+        status: nil
+      }
     end
 
     ###
 
     def self.running?
-      @status == :running
+      info[:status] == :running
     end
 
     def self.completed?
-      @status == :completed
+      info[:status] == :completed
     end
 
     def self.failed?
-      @status == :failed
+      info[:status] == :failed
     end
 
     ###
@@ -39,11 +54,6 @@ module Kimurai
     def self.driver
       @driver ||= superclass.driver
     end
-
-    # def self.parse_proxy(proxy_string)
-    #   ip, port, type, user, password = proxy_string.split(":")
-    #   { ip: ip, port: port, type: type, user: user, password: password }
-    # end
 
     ###
 
@@ -67,14 +77,18 @@ module Kimurai
         end
       end
 
-      @status = :running
+      info[:status] = :running
       self.new.parse
-      @status = :completed
+      info[:status] = :completed
     rescue => e
-      @status = :failed
+      info[:status] = :failed
+      info[:error] = e
       raise e
     ensure
-      message = "Crawler: closed with status: #{status}"
+      info[:stop_time] = Time.now
+      info[:running_time] = info[:stop_time] - info[:start_time]
+
+      message = "Crawler: closed: #{info}"
       failed? ? Logger.error(message) : Logger.info(message)
     end
 
@@ -108,20 +122,21 @@ module Kimurai
     end
 
     def pipeline_item(item)
-      Stats.items[:processed] += 1
+      self.class.info[:items][:processed] += 1
 
-      # check here if item valid
       @pipelines.each do |pipeline|
         item = pipeline.process_item(item)
       end
 
-      Stats.items[:saved] += 1
+      self.class.info[:items][:saved] += 1
       Logger.info "Pipeline: saved item: #{item.to_json}"
     rescue => e
-      # to do inspect hash item
-      Logger.error "Pipeline: dropped item: #{e.inspect}: #{item}"
+      error = e.inspect
+      self.class.info[:items][:drop_errors][error] ||= 0
+      self.class.info[:items][:drop_errors][error] += 1
+      Logger.error "Pipeline: dropped item: #{error}: #{item}"
     ensure
-      Stats.print(:items)
+      Logger.info "Stats items: processed: #{self.class.info[:items][:processed]}, saved: #{self.class.info[:items][:saved]}"
     end
 
     # parallel

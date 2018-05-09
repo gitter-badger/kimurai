@@ -1,4 +1,3 @@
-require_relative 'base/stats'
 require 'json'
 require 'concurrent'
 
@@ -13,7 +12,7 @@ module Kimurai
         start_time: Time.new,
         stop_time: nil,
         running_time: nil,
-        visits: Capybara::Session.global_visits,
+        visits: Capybara::Session.stats,
         items: {
           processed: 0,
           saved: 0,
@@ -58,6 +57,9 @@ module Kimurai
     ###
 
     def self.start
+      Kimurai.configuration.current_crawler = self
+      Capybara::Session.logger_formatter = Kimurai.configuration.logger_formatter
+
       pipelines = self.pipelines.map do |pipeline|
         pipeline_class = pipeline.to_s.classify.constantize
         pipeline_class.crawler = self
@@ -73,7 +75,7 @@ module Kimurai
           pipeline.close_crawler if pipeline.respond_to? :close_crawler
         rescue => e
           # ? # or create separate at_exit for each pipeline
-          Logger.error "Crawler: there is an error in pipeline while trying to call .close_crawler method: #{e.class}, #{e.message}"
+          Log.error "Crawler: there is an error in pipeline while trying to call .close_crawler method: #{e.class}, #{e.message}"
         end
       end
 
@@ -89,7 +91,7 @@ module Kimurai
       info[:running_time] = info[:stop_time] - info[:start_time]
 
       message = "Crawler: closed: #{info}"
-      failed? ? Logger.error(message) : Logger.info(message)
+      failed? ? Log.error(message) : Log.info(message)
     end
 
     ###
@@ -129,14 +131,14 @@ module Kimurai
       end
 
       self.class.info[:items][:saved] += 1
-      Logger.info "Pipeline: saved item: #{item.to_json}"
+      Log.info "Pipeline: saved item: #{item.to_json}"
     rescue => e
       error = e.inspect
       self.class.info[:items][:drop_errors][error] ||= 0
       self.class.info[:items][:drop_errors][error] += 1
-      Logger.error "Pipeline: dropped item: #{error}: #{item}"
+      Log.error "Pipeline: dropped item: #{error}: #{item}"
     ensure
-      Logger.info "Stats items: processed: #{self.class.info[:items][:processed]}, saved: #{self.class.info[:items][:saved]}"
+      Log.info "Stats items: processed: #{self.class.info[:items][:processed]}, saved: #{self.class.info[:items][:saved]}"
     end
 
     # parallel

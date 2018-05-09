@@ -1,5 +1,6 @@
 # TODO refactor, see https://github.com/nruth/show_me_the_cookies
 # check if cookies enabled https://www.whatismybrowser.com/detect/are-cookies-enabled
+require 'capybara/mechanize'
 
 module Capybara
   class Session
@@ -21,7 +22,6 @@ module Capybara
 
     # set
     def set_cookies(cookies)
-      # clear_cookies!
       cookies.each do |cookie|
         add_cookie(cookie)
       end
@@ -37,13 +37,13 @@ module Capybara
         driver.set_cookie(nil, nil, cookie)
       when :selenium
         if current_url == "data:,"
-          Kimurai::Logger.error "Session: Can't set cookies for selenium because " \
+          logger.error "Session: Can't set cookies for selenium because " \
             "current_url == 'data:,'. Visit any valid page first and try again. Skipped."
         else
           begin
             driver.browser.manage.add_cookie(cookie)
           rescue => e
-            Kimurai::Logger.error "Can't set cookie for selenium, skipped. Error: #{e.class} #{e.message}"
+            logger.error "Can't set cookie for selenium, skipped. Error: #{e.class} #{e.message}"
           end
         end
       when :mechanize

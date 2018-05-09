@@ -12,7 +12,7 @@ module Kimurai
           @driver_options[:window_size] = @conf[:window_size]
         end
 
-        Kimurai::Logger.debug "Session builder: enabled window size for #{driver_name}"
+        Log.debug "Session builder: enabled window size for #{driver_name}"
       end
     end
 
@@ -21,7 +21,7 @@ module Kimurai
       if @conf[:window_size] && driver_name == :selenium_firefox
         @session.resize_to(*@conf[:window_size])
 
-        Kimurai::Logger.debug "Session builder: enabled window size for #{driver_name}"
+        Log.debug "Session builder: enabled window size for #{driver_name}"
       end
     end
   end

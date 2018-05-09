@@ -66,7 +66,7 @@ module Kimurai
     def build
       unless AVAILABLE_DRIVERS.include? driver_name
         if Capybara.drivers.keys.include? driver_name
-          Logger.debug "Session builder: created a session using custom driver #{driver_name}"
+          Log.debug "Session builder: created a session using custom driver #{driver_name}"
           return Capybara::Session.new(driver_name)
         else
           raise ConfigurationError, "Driver is not defined `#{driver_name}`"
@@ -98,7 +98,7 @@ module Kimurai
       end
 
       @session = Capybara::Session.new(driver_name)
-      Kimurai::Logger.debug "Session builder: created session instance"
+      Log.debug "Session builder: created session instance"
 
       # window size
       check_window_size_for_selenium_firefox
@@ -133,10 +133,16 @@ module Kimurai
         when :poltergeist_phantomjs
           Capybara::Poltergeist::Driver.new(app, @driver_options)
         when :mechanize
-          Capybara::Mechanize::Driver.new("app")
+          # https://www.rubydoc.info/gems/capybara-mechanize/1.5.0
+          driver = Capybara::Mechanize::Driver.new("app")
+          # refactor, maybe there is a way to set settings as options for mechanize
+          driver.configure do |a|
+            a.history.max_size = 2
+          end
+          driver
         end
 
-      Kimurai::Logger.debug "Session builder: created driver instance (#{driver_name})"
+      Log.debug "Session builder: created driver instance (#{driver_name})"
       driver_instance
     end
 
@@ -170,7 +176,7 @@ module Kimurai
         require 'capybara/mechanize'
       end
 
-      Kimurai::Logger.debug "Session builder: required driver gem (#{driver_type})"
+      Log.debug "Session builder: required driver gem (#{driver_type})"
     end
 
     def parse_driver_type(name)
@@ -198,7 +204,7 @@ module Kimurai
           @session.set_cookies(@conf[:default_cookies])
         end
 
-        Kimurai::Logger.debug "Session builder: enabled default cookies for #{driver_name}"
+        Log.debug "Session builder: enabled default cookies for #{driver_name}"
       end
     end
 
@@ -213,7 +219,7 @@ module Kimurai
           @driver_options[:phantomjs_options] << "--load-images=no"
         end
 
-        Kimurai::Logger.debug "Session builder: enabled disable_images for #{driver_name}"
+        Log.debug "Session builder: enabled disable_images for #{driver_name}"
       end
     end
 
@@ -230,13 +236,13 @@ module Kimurai
 
             at_exit do
               self.class.virtual_display.destroy
-              Kimurai::Logger.debug "Session builder: destroyed virtual_display instance"
+              Log.debug "Session builder: destroyed virtual_display instance"
             end
           end
-          Kimurai::Logger.debug "Session builder: enabled virtual_display headless mode for #{driver_name}"
+          Log.debug "Session builder: enabled virtual_display headless mode for #{driver_name}"
         else
           @driver_options.args << "--headless"
-          Kimurai::Logger.debug "Session builder: enabled native headless mode for #{driver_name}"
+          Log.debug "Session builder: enabled native headless mode for #{driver_name}"
         end
       end
     end
@@ -245,14 +251,14 @@ module Kimurai
       if @conf[:session_options][:recreate][:if_memory_more_than] && [:selenium, :poltergeist].include?(driver_type)
         value = @conf[:session_options][:recreate][:if_memory_more_than]
         @session.options[:recreate_if_memory_more_than] = value
-        Kimurai::Logger.debug "Session builder: enabled recreate_if_memory_more_than #{value} for #{driver_name} session"
+        Log.debug "Session builder: enabled recreate_if_memory_more_than #{value} for #{driver_name} session"
       end
     end
 
     def check_before_request_clear_cookies
       if @conf[:session_options][:before_request][:clear_cookies]
         @session.options[:before_request_clear_cookies] = true
-        Kimurai::Logger.debug "Session builder: enabled before_request_clear_cookies for #{driver_name} session"
+        Log.debug "Session builder: enabled before_request_clear_cookies for #{driver_name} session"
       end
     end
   end

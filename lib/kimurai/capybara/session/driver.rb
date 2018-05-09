@@ -61,7 +61,7 @@ module Capybara
 
         [webdriver_pid, webdriver_port]
       when :mechanize
-        Kimurai::Logger.error "Not supported"
+        logger.error "Not supported"
         [nil, nil]
       end
     end

@@ -7,7 +7,7 @@ module Kimurai
       if @conf[:ssl_cert_path] && driver_name == :poltergeist_phantomjs
         @driver_options[:phantomjs_options] << "--ssl-certificates-path=#{@conf[:ssl_cert_path]}"
 
-        Kimurai::Logger.debug "Session builder: enabled ssl_cert for poltergeist_phantomjs"
+        Log.debug "Session builder: enabled ssl_cert for poltergeist_phantomjs"
       end
     end
 
@@ -20,16 +20,16 @@ module Kimurai
           @driver_options.profile.secure_ssl = false
           @driver_options.profile.assume_untrusted_certificate_issuer = false
 
-          Kimurai::Logger.debug "Session builder: enabled ignore ssl_errors for selenium_firefox"
+          Log.debug "Session builder: enabled ignore ssl_errors for selenium_firefox"
         when :selenium_chrome
           @driver_options.args << "--ignore-certificate-errors"
           @driver_options.args << "--allow-insecure-localhost"
 
-          Kimurai::Logger.debug "Session builder: enabled ignore ssl_errors for selenium_chrome"
+          Log.debug "Session builder: enabled ignore ssl_errors for selenium_chrome"
         when :poltergeist_phantomjs
           @driver_options[:phantomjs_options].push("--ignore-ssl-errors=yes", "--ssl-protocol=any")
 
-          Kimurai::Logger.debug "Session builder: enabled ignore ssl_errors for poltergeist_phantomjs"
+          Log.debug "Session builder: enabled ignore ssl_errors for poltergeist_phantomjs"
         end
       end
     end
@@ -39,7 +39,7 @@ module Kimurai
       if @conf[:ssl_cert_path] && driver_name == :mechanize
         @session.driver.browser.agent.http.ca_file = @conf[:ssl_cert_path]
 
-        Kimurai::Logger.debug "Session builder: enabled ssl_cert for mechanize"
+        Log.debug "Session builder: enabled ssl_cert for mechanize"
       end
     end
 
@@ -47,7 +47,7 @@ module Kimurai
       if @conf[:ignore_ssl_errors] && driver_name == :mechanize
         @session.driver.browser.agent.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
-        Kimurai::Logger.debug "Session builder: enabled ignore ssl_errors for mechanize"
+        Log.debug "Session builder: enabled ignore ssl_errors for mechanize"
       end
     end
   end

@@ -2,11 +2,12 @@ require 'active_support'
 require 'active_support/core_ext'
 require 'pathname'
 require 'concurrent'
+require 'ostruct'
 
 require 'kimurai/version'
-require 'kimurai/logger'
+require 'kimurai/log'
 
-require 'kimurai/capybara_session'
+require 'kimurai/capybara/session'
 require 'kimurai/session_builder'
 require 'kimurai/pipeline'
 
@@ -14,19 +15,21 @@ require 'kimurai/base'
 require 'kimurai/cli'
 
 module Kimurai
-  LoggerFormatter =
-    proc do |severity, datetime, progname, msg|
-      current_thread_id = Thread.current.object_id
-      thread_type = Thread.main == Thread.current ? "Main" : "Child"
-      output = "%s, [%s#%d] [%s: %s] %5s -- %s: %s\n"
-        .freeze % [severity[0..0], datetime, $$, thread_type, current_thread_id, severity, progname, msg]
+  class << self
+    def configuration
+      @configuration ||= OpenStruct.new
     end
 
-  def self.env
-    ENV.fetch("KIMURAI_ENV", "development")
-  end
+    def configure
+      yield(configuration)
+    end
 
-  def self.root
-    Pathname.new('..').expand_path(File.dirname(__FILE__))
+    def env
+      ENV.fetch("KIMURAI_ENV", "development")
+    end
+
+    def root
+      Pathname.new('..').expand_path(File.dirname(__FILE__))
+    end
   end
 end

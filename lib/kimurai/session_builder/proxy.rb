@@ -27,16 +27,16 @@ module Kimurai
               @driver_options.profile["network.proxy.socks_version"] = 5
             end
 
-            Kimurai::Logger.debug "Session builder: enabled proxy for selenium_firefox (type #{type}, ip #{ip}, port #{port})"
+            Log.debug "Session builder: enabled proxy for selenium_firefox (type #{type}, ip #{ip}, port #{port})"
           when :selenium_chrome
             # remember, you still trackable because of webrtc enabled https://ipleak.net/
             # and in chrome there is no easy way to disable it.
             # you can run chrome with a custom preconfigured profile with a special extention https://stackoverflow.com/a/44602360
             @driver_options.args << "--proxy-server=#{type}://#{ip}:#{port}"
-            Kimurai::Logger.debug "Session builder: enabled proxy for selenium_chrome (type #{type}, ip #{ip}, port #{port})"
+            Log.debug "Session builder: enabled proxy for selenium_chrome (type #{type}, ip #{ip}, port #{port})"
           end
         else
-          Kimurai::Logger.warn "Session builder: selenium don't allow proxy with authentication, skipped"
+          Log.warn "Session builder: selenium don't allow proxy with authentication, skipped"
         end
       end
     end
@@ -51,9 +51,9 @@ module Kimurai
             @driver_options.args << "--proxy-bypass-list=#{@conf[:proxy_bypass_list].join(";")}"
           end
 
-          Kimurai::Logger.debug "Session builder: enabled proxy_bypass_list for #{driver_name}"
+          Log.debug "Session builder: enabled proxy_bypass_list for #{driver_name}"
         else
-          Kimurai::Logger.warn "Session builder: To set proxy_bypass_list, session_proxy is required, skipped"
+          Log.warn "Session builder: To set proxy_bypass_list, session_proxy is required, skipped"
         end
       end
     end
@@ -64,7 +64,7 @@ module Kimurai
         @session.set_proxy(@conf[:session_proxy])
 
         ip, port, type, user, password = @conf[:session_proxy].values
-        Kimurai::Logger.debug "Session builder: enabled proxy for #{driver_name} " \
+        Log.debug "Session builder: enabled proxy for #{driver_name} " \
           "(type: #{type}, ip: #{ip}, port: #{port}, user: #{user}, password: #{password})"
       end
     end

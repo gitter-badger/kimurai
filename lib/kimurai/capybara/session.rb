@@ -139,7 +139,11 @@ module Capybara
 
     private
     def logger
-      @logger ||= Logger.new(STDOUT, formatter: self.class.logger_formatter)
+      @logger ||= begin
+        logger = Logger.new(STDOUT, formatter: self.class.logger_formatter)
+        logger.level = "Logger::#{ENV.fetch('LOGGER_LEVEL', 'DEBUG')}".constantize
+        logger
+      end
     end
 
     def print_stats

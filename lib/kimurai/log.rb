@@ -9,7 +9,9 @@ module Kimurai
 
       def logger
         @logger ||= begin
-          Logger.new(STDOUT, formatter: Kimurai.configuration.logger_formatter)
+          logger = Logger.new(STDOUT, formatter: Kimurai.configuration.logger_formatter)
+          logger.level = "Logger::#{ENV.fetch('LOGGER_LEVEL', 'DEBUG')}".constantize
+          logger
         end
       end
     end

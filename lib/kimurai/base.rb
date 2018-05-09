@@ -1,5 +1,6 @@
 require 'json'
 require 'concurrent'
+require 'uri'
 
 module Kimurai
   class Base
@@ -139,6 +140,12 @@ module Kimurai
       Log.error "Pipeline: dropped item: #{error}: #{item}"
     ensure
       Log.info "Stats items: processed: #{self.class.info[:items][:processed]}, saved: #{self.class.info[:items][:saved]}"
+    end
+
+    ###
+
+    def absolute_url(url, base:)
+      URI.join(base, url).to_s
     end
 
     ###

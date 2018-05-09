@@ -13,6 +13,7 @@ module Capybara
 
     def recreate_driver!
       @driver.quit
+      @driver, @driver_type, @driver_pid, @driver_port = nil
       logger.info "Session: current driver has been quitted"
 
       @driver = create_session_driver
@@ -34,6 +35,10 @@ module Capybara
       logger.info "Session: a new session driver has been created (pid: #{@driver_pid}, port: #{@driver_port})"
 
       driver
+    end
+
+    def driver_type
+      @driver_type ||= parse_driver_type(driver.class)
     end
 
     def parse_driver_type(driver_class)
@@ -61,7 +66,7 @@ module Capybara
 
         [webdriver_pid, webdriver_port]
       when :mechanize
-        logger.error "Not supported"
+        logger.error "Session: can't define driver_pid and driver_port for mechanize, not supported"
         [nil, nil]
       end
     end

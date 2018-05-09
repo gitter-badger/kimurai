@@ -16,6 +16,11 @@ module Capybara
       attr_accessor :logger_formatter
     end
 
+    # todo refactor, change name
+    def self.options
+      @options ||= {}
+    end
+
     def self.logger_formatter
       @logger_formatter ||= Logger::Formatter.new
     end
@@ -147,16 +152,25 @@ module Capybara
     end
 
     def check_request_options
+      # todo add checkings for a driver type
+
       if limit = options[:recreate_if_memory_more_than]
         memory = current_memory
         if memory > limit
-          logger.debug "Session: limit (#{limit}) of current_memory (#{memory}) is exceeded"
+          logger.warn "Session: limit (#{limit}) of current_memory (#{memory}) is exceeded"
           recreate_driver!
         end
       end
 
       if options[:before_request_clear_cookies]
         clear_cookies!
+        logger.debug "Session: cleared cookies before request"
+      end
+
+      if options[:before_request_set_random_user_agent]
+        user_agent = self.class.options[:user_agents_list].sample
+        add_header("User-Agent", user_agent)
+        logger.debug "Session: changed user_agent before request"
       end
     end
   end

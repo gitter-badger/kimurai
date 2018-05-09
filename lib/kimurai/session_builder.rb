@@ -43,8 +43,9 @@ module Kimurai
       @conf[:ignore_ssl_errors] = options[:ignore_ssl_errors].presence
 
       @conf[:session_headers] = options[:headers].presence
+      @conf[:user_agents_list] = options[:user_agents_list].presence
       @conf[:session_user_agent] = begin
-        list = options[:user_agents_list].presence
+        list = @conf[:user_agents_list]
         list.sample if list
       end
 
@@ -61,6 +62,9 @@ module Kimurai
 
       @conf[:session_options][:before_request][:clear_cookies] =
         options[:session_options][:before_request][:clear_cookies].presence
+
+      @conf[:session_options][:before_request][:set_random_user_agent] =
+        options[:session_options][:before_request][:set_random_user_agent].presence
     end
 
     def build
@@ -118,6 +122,7 @@ module Kimurai
       check_default_cookies
       check_recreate_if_memory_for_selenium_poltergeist
       check_before_request_clear_cookies
+      check_before_request_set_random_user_agent_for_mechanize_poltergeist
       @session
     end
 
@@ -259,6 +264,17 @@ module Kimurai
       if @conf[:session_options][:before_request][:clear_cookies]
         @session.options[:before_request_clear_cookies] = true
         Log.debug "Session builder: enabled before_request_clear_cookies for #{driver_name} session"
+      end
+    end
+
+    def check_before_request_set_random_user_agent_for_mechanize_poltergeist
+      if @conf[:session_options][:before_request][:set_random_user_agent] && [:mechanize, :poltergeist].include?(driver_type)
+        if @conf[:user_agents_list]
+          Capybara::Session.options[:user_agents_list] ||= @conf[:user_agents_list]
+          @session.options[:before_request_set_random_user_agent] = true
+        else
+          Log.error "Session builder: to set before_request_set_random_user_agent for #{driver_name}, provide a user_agents_list as well"
+        end
       end
     end
   end

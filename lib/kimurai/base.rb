@@ -5,7 +5,7 @@ require 'uri'
 module Kimurai
   class Base
     class << self
-      attr_reader :name
+      attr_reader :name, :start_url
     end
 
     def self.info
@@ -81,7 +81,14 @@ module Kimurai
       end
 
       info[:status] = :running
-      self.new.parse
+
+      crawler_instance = self.new
+      if start_url
+        crawler_instance.request_to(:parse, url: start_url)
+      else
+        crawler_instance.parse
+      end
+
       info[:status] = :completed
     rescue => e
       info[:status] = :failed
@@ -92,7 +99,7 @@ module Kimurai
       info[:running_time] = info[:stop_time] - info[:start_time]
 
       message = "Crawler: closed: #{info}"
-      failed? ? Log.error(message) : Log.info(message)
+      failed? ? Log.fatal(message) : Log.info(message)
     end
 
     ###
@@ -112,6 +119,12 @@ module Kimurai
       @options = self.class.default_options.deep_merge(options)
       @pipelines = self.class.pipelines
         .map { |pipeline| pipeline.to_s.classify.constantize.new }
+    end
+
+    def request_to(handler, type = :get, url:, data: {})
+      # todo: add post request option for mechanize
+      page.visit(url)
+      send(handler, { url: url, data: data })
     end
 
     private
@@ -149,12 +162,6 @@ module Kimurai
     end
 
     ###
-
-    def request_to(handler, type = :get, url:, data: {})
-      # todo: add post request option for mechanize
-      page.visit(url)
-      send(handler, { url: url, data: data })
-    end
 
     # http://phrogz.net/programmingruby/tut_threads.html
     # https://www.sitepoint.com/threads-ruby/

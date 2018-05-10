@@ -58,7 +58,7 @@ module Kimurai
     ###
 
     def self.start
-      Kimurai.configuration.current_crawler = self
+      Kimurai.configuration.current_crawler = self # refactor, it should not be in config
       Capybara::Session.logger_formatter = Kimurai.configuration.logger_formatter
 
       pipelines = self.pipelines.map do |pipeline|
@@ -158,6 +158,8 @@ module Kimurai
 
     # http://phrogz.net/programmingruby/tut_threads.html
     # https://www.sitepoint.com/threads-ruby/
+    # upd try to use https://github.com/grosser/parallel instead,
+    # add optional map (map_in_parallel() to return results from threads)
     # to do, add optional post type here too
     def in_parallel(handler, size, requests:, driver: self.class.driver, driver_options: {})
       parts = requests.in_groups(size, false)

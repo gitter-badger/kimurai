@@ -139,7 +139,7 @@ module Capybara
 
     private
     def logger
-      @logger ||= self.class.logger
+      self.class.logger
     end
 
     def print_stats

@@ -58,8 +58,8 @@ module Kimurai
     ###
 
     def self.start
-      Kimurai.configuration.current_crawler = self # refactor, it should not be in config
-      Capybara::Session.logger_formatter = Kimurai.configuration.logger_formatter
+      Kimurai.current_crawler = self.to_s
+      Capybara::Session.logger = Log.instance
 
       pipelines = self.pipelines.map do |pipeline|
         pipeline_class = pipeline.to_s.classify.constantize

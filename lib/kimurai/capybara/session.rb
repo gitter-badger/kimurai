@@ -13,16 +13,16 @@ require_relative 'session/proxy'
 module Capybara
   class Session
     class << self
-      attr_accessor :logger_formatter
+      attr_accessor :logger
+    end
+
+    def self.logger
+      @logger ||= Logger.new(STDOUT)
     end
 
     # todo refactor, change name
     def self.options
       @options ||= {}
-    end
-
-    def self.logger_formatter
-      @logger_formatter ||= Logger::Formatter.new
     end
 
     def self.stats
@@ -139,11 +139,7 @@ module Capybara
 
     private
     def logger
-      @logger ||= begin
-        logger = Logger.new(STDOUT, formatter: self.class.logger_formatter)
-        logger.level = "Logger::#{ENV.fetch('LOGGER_LEVEL', 'DEBUG')}".constantize
-        logger
-      end
+      @logger ||= self.class.logger
     end
 
     def print_stats
@@ -157,7 +153,6 @@ module Capybara
 
     def check_request_options
       # todo add checkings for a driver type
-
       if limit = options[:recreate_if_memory_more_than]
         memory = current_memory
         if memory > limit

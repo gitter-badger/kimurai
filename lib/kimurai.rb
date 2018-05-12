@@ -31,5 +31,14 @@ module Kimurai
     def root
       Pathname.new('..').expand_path(File.dirname(__FILE__))
     end
+
+    def current_crawler
+      ENV["CURRENT_CRAWLER"]
+    end
+
+    def current_crawler=(value)
+      ENV.store("CURRENT_CRAWLER", value)
+    end
   end
 end
+

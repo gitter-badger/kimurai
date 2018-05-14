@@ -7,6 +7,7 @@ require 'ostruct'
 require 'kimurai/version'
 require 'kimurai/log'
 
+require 'kimurai/capybara/default_configuration'
 require 'kimurai/capybara/session'
 require 'kimurai/session_builder'
 require 'kimurai/pipeline'

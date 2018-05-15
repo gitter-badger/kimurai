@@ -28,36 +28,45 @@ module Kimurai
     def start_all
       require './config/boot'
       start_time = Time.now # fix to utc
+      session_timestamp = start_time.to_i
 
       ENV.store("LOG_TO_FILE", "true")
-      ENV.store("SESSION_TIMESTAMP", start_time.to_i.to_s)
+      ENV.store("SESSION_TIMESTAMP", session_timestamp.to_s)
 
       crawlers = Base.descendants.select { |crawler_class| crawler_class.name != nil }
       jobs = options["jobs"] || 1
       raise "Jobs count can't be 0" if jobs == 0
 
-      puts ">> Starting new session #{start_time.to_i}, crawlers count: #{crawlers.size}, concurrent jobs: #{jobs}"
-      at_start = ->(item, i) { puts "> Started: #{item.name}, index: #{i + 1}" }
-
-      finished_crawlers = []
-      failed_crawlers   = []
-      # maybe it's a good idea to add full report with item.info
-      # result.nil? ? :failed : result - if crawler finished with error, result will be nil:
-      at_finish = lambda do |item, i, result|
-        status = result.nil? ? :failed : result
-        status == :failed ? failed_crawlers << item.name : finished_crawlers << item.name
-        puts "< Finished: #{item.name}, index: #{i + 1}, status: #{status}"
+      puts ">> Starting session: #{session_timestamp}, crawlers in quenue: " \
+        "#{crawlers.map(&:name).join(', ')} (#{crawlers.size}), concurrent jobs: #{jobs}"
+      if at_start_callback = Kimurai.configuration.start_all_at_start_callback
+        at_start_callback.call(session_timestamp, crawlers, jobs)
       end
 
-      Parallel.each(crawlers, in_processes: jobs, isolation: true, start: at_start, finish: at_finish) do |crawler_class|
+      at_crawler_start = ->(item, i) { puts "> Started: #{item.name}, index: #{i + 1}" }
+
+      completed = []
+      failed    = []
+      # maybe it's a good idea to add full report with item.info
+      # result.nil? ? :failed : result - if crawler finished with error, result will be nil:
+      at_crawler_finish = lambda do |item, i, result|
+        status = result.nil? ? :failed : result
+        status == :failed ? failed << item : completed << item
+        puts "< Stopped: #{item.name}, index: #{i + 1}, status: #{status}"
+      end
+
+      Parallel.each(crawlers, in_processes: jobs, isolation: true, start: at_crawler_start, finish: at_crawler_finish) do |crawler_class|
         crawler_class.start
       rescue => e
         # Failed crawler
       end
 
       total_time = Time.now - start_time
-      puts "<< Session #{start_time.to_i} finished. Total time: #{total_time}. " \
-        "Finished crawlers: #{finished_crawlers.join(', ')}. Failed crawlers: #{failed_crawlers.join(', ')}."
+      puts "<< Finished session: #{session_timestamp}, total time: #{total_time}, " \
+        "completed: #{completed.map(&:name).join(', ')} (#{completed.size}), failed: #{failed.map(&:name).join(', ')} (#{failed.size})."
+      if at_finish_callback = Kimurai.configuration.start_all_at_finish_callback
+        at_finish_callback.call(session_timestamp, total_time, completed, failed)
+      end
     end
 
     # def start_all_tsp

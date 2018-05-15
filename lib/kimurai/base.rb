@@ -103,7 +103,7 @@ module Kimurai
       info[:stop_time] = Time.now
       info[:running_time] = info[:stop_time] - info[:start_time]
 
-      message = "Crawler: closed: #{info}"
+      message = "Crawler: stopped: #{info}"
       failed? ? Log.fatal(message) : Log.info(message)
     end
 

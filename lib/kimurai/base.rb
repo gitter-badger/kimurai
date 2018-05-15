@@ -12,6 +12,7 @@ module Kimurai
       @info ||= {
         name: name,
         status: nil,
+        environment: Kimurai.env,
         start_time: Time.new,
         stop_time: nil,
         running_time: nil,
@@ -90,10 +91,14 @@ module Kimurai
         crawler_instance.parse
       end
       info[:status] = :completed
+
     rescue => e
-      info[:status] = :failed
       info[:error] = e
+      # info[:error_backtrace] = e.backtrace
+      info[:status] = :failed
       raise e
+      # exit 1
+      # info # it will be returned as a result to a parallel output from command
     ensure
       info[:stop_time] = Time.now
       info[:running_time] = info[:stop_time] - info[:start_time]
@@ -172,6 +177,8 @@ module Kimurai
     # upd try to use https://github.com/grosser/parallel instead,
     # add optional map (map_in_parallel() to return results from threads)
     # to do, add optional post type here too
+    # to do, add note about to include driver options, or use a default ones,
+    # upd it's already included, see initialize and def page
     def in_parallel(handler, size, requests:, driver: self.class.driver, driver_options: {})
       parts = requests.in_groups(size, false)
       threads = []
@@ -185,7 +192,7 @@ module Kimurai
           end
         end
         # add delay between starting threads
-        sleep 1
+        sleep 0.5
       end
 
       threads.each(&:join)

@@ -26,7 +26,7 @@ module Capybara
     end
 
     def self.stats
-      @stats ||= { requests: 0, responses: 0 }
+      @stats ||= { requests: 0, responses: 0, requests_errors: {}}
     end
 
     def self.current_instances
@@ -40,7 +40,7 @@ module Capybara
     end
 
     def stats
-      @stats ||= { requests: 0, responses: 0, memory: [0] }
+      @stats ||= { requests: 0, responses: 0, memory: [0], requests_errors: {}}
     end
 
     alias_method :original_visit, :visit

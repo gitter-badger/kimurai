@@ -36,18 +36,28 @@ module Kimurai
       jobs = options["jobs"] || 1
       raise "Jobs count can't be 0" if jobs == 0
 
-      puts ">> Starting processing #{crawlers.size} crawlers in concurrent mode #{jobs}"
-      start = ->(item, i) { puts "> Started: #{item.name}, index: #{i + 1}" }
-      finish = ->(item, i, result) { puts "< Finished: #{item.name}, index: #{i + 1}, state: #{result.nil? ? :failed : result}" }
+      puts ">> Starting new session #{start_time.to_i}, crawlers count: #{crawlers.size}, concurrent jobs: #{jobs}"
+      at_start = ->(item, i) { puts "> Started: #{item.name}, index: #{i + 1}" }
 
-      Parallel.each(crawlers, in_processes: jobs, isolation: true, start: start, finish: finish) do |crawler_class|
+      finished_crawlers = []
+      failed_crawlers   = []
+      # maybe it's a good idea to add full report with item.info
+      # result.nil? ? :failed : result - if crawler finished with error, result will be nil:
+      at_finish = lambda do |item, i, result|
+        status = result.nil? ? :failed : result
+        status == :failed ? failed_crawlers << item.name : finished_crawlers << item.name
+        puts "< Finished: #{item.name}, index: #{i + 1}, status: #{status}"
+      end
+
+      Parallel.each(crawlers, in_processes: jobs, isolation: true, start: at_start, finish: at_finish) do |crawler_class|
         crawler_class.start
       rescue => e
         # Failed crawler
       end
 
       total_time = Time.now - start_time
-      puts "<< All jobs finished. Total time: #{total_time}"
+      puts "<< Session #{start_time.to_i} finished. Total time: #{total_time}. " \
+        "Finished crawlers: #{finished_crawlers.join(', ')}. Failed crawlers: #{failed_crawlers.join(', ')}."
     end
 
     # def start_all_tsp

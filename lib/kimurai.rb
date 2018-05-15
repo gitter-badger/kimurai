@@ -1,7 +1,9 @@
 require 'active_support'
 require 'active_support/core_ext'
+# require 'active_support/all'
+
 require 'pathname'
-require 'concurrent'
+require 'concurrent' # not sure
 require 'ostruct'
 
 require 'kimurai/version'

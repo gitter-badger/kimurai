@@ -10,6 +10,8 @@ module Kimurai
 
     def self.info
       @info ||= {
+        name: name,
+        status: nil,
         start_time: Time.new,
         stop_time: nil,
         running_time: nil,
@@ -18,8 +20,7 @@ module Kimurai
           processed: 0,
           saved: 0,
           drop_errors: {}
-        },
-        status: nil
+        }
       }
     end
 
@@ -44,7 +45,7 @@ module Kimurai
     @default_options = {}
 
     def self.default_options
-      superclass.equal?(::Object) ? @default_options : superclass.default_options.deep_merge(@default_options)
+      superclass.equal?(::Object) ? @default_options : superclass.default_options.deep_merge(@default_options || {})
     end
 
     def self.pipelines
@@ -58,8 +59,9 @@ module Kimurai
     ###
 
     def self.start
-      Kimurai.current_crawler = self.to_s
+      Kimurai.current_crawler = name
       Capybara::Session.logger = Log.instance
+      info[:session_timestamp] = ENV["SESSION_TIMESTAMP"]&.to_i if ENV["SESSION_TIMESTAMP"]
 
       pipelines = self.pipelines.map do |pipeline|
         pipeline_class = pipeline.to_s.classify.constantize
@@ -80,15 +82,13 @@ module Kimurai
         end
       end
 
-      info[:status] = :running
-
       crawler_instance = self.new
+      info[:status] = :running
       if start_url
         crawler_instance.request_to(:parse, url: start_url)
       else
         crawler_instance.parse
       end
-
       info[:status] = :completed
     rescue => e
       info[:status] = :failed
@@ -128,6 +128,10 @@ module Kimurai
     end
 
     private
+
+    def logger
+      Log.instance
+    end
 
     def page
       @page ||= SessionBuilder.new(@driver, options: @options).build

@@ -1,4 +1,6 @@
 #!/usr/bin/env ruby
 
-require "kimurai"
+require 'kimurai'
+require 'kimurai/all'
+
 Kimurai::CLI.start(ARGV)

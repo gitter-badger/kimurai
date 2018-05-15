@@ -3,7 +3,7 @@ module Capybara
     def current_memory
       pid = driver_pid
       # if #driver hasn't been called yet, driver_pid will be nil.
-      # In this case we need to change it to zero
+      # In this case we need to set memory to zero
       return 0 unless pid
       all = (get_descendant_processes(pid) << pid)
 

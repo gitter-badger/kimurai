@@ -1,12 +1,11 @@
 require 'thor'
 require 'parallel'
-require 'ruby-progressbar'
 
 module Kimurai
   class CLI < Thor
     desc "start", "Starts the crawler by crawler name"
     def start(crawler_name)
-      require './config/boot'
+      require './config/application'
 
       crawler_class = Base.descendants.find { |crawler_class| crawler_class.name == crawler_name }
       crawler_class.start
@@ -14,7 +13,7 @@ module Kimurai
 
     desc "list", "Lists all crawlers in the project"
     def list
-      require './config/boot'
+      require './config/crawlers_boot'
 
       Base.descendants.each do |crawler_class|
         puts crawler_class.name if crawler_class.name
@@ -26,7 +25,7 @@ module Kimurai
     desc "start_all", "Starts all crawlers in the project in quenue"
     option :jobs, aliases: :j, type: :numeric, banner: "The number of concurrent jobs"
     def start_all
-      require './config/boot'
+      require './config/application'
       start_time = Time.now # fix to utc
       session_timestamp = start_time.to_i
 

@@ -33,7 +33,9 @@ Gem::Specification.new do |spec|
   spec.add_dependency "concurrent-ruby"
   spec.add_dependency "headless"
   spec.add_dependency "parallel"
-  spec.add_dependency "ruby-progressbar"
+
+  spec.add_dependency "sequel"
+  spec.add_dependency "sqlite3"
 
   spec.add_development_dependency "bundler", "~> 1.16"
   spec.add_development_dependency "rake", "~> 10.0"

@@ -92,7 +92,7 @@ module Capybara
     # pass a lambda as an action or url to visit
     # to do: set restriction to mechanize
     # notice: not safe with #recreate_driver! (any interactions with more
-    # then one window)
+    # than one window)
     def within_new_window_by(action: nil, url: nil)
       case
       when action

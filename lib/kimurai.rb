@@ -1,21 +1,7 @@
-require 'active_support'
-require 'active_support/core_ext'
-# require 'active_support/all'
+require 'kimurai/version'
 
 require 'pathname'
-require 'concurrent' # not sure
 require 'ostruct'
-
-require 'kimurai/version'
-require 'kimurai/log'
-
-require 'kimurai/capybara/default_configuration'
-require 'kimurai/capybara/session'
-require 'kimurai/session_builder'
-require 'kimurai/pipeline'
-
-require 'kimurai/base'
-require 'kimurai/cli'
 
 module Kimurai
   class << self

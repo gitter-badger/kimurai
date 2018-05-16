@@ -4,10 +4,6 @@ require 'sqlite3'
 require 'json'
 # require 'yaml'
 
-# Sequel.datetime_class = DateTime
-# binding.pry
-# Sequel.default_timezone = Kimurai.timezone
-
 module Kimurai
   class Stats
     DB = Sequel.connect("sqlite://db/crawlers_runs_#{Kimurai.env}.sqlite3")
@@ -16,10 +12,11 @@ module Kimurai
       primary_key :id, type: :integer, auto_increment: false
       datetime :start_time, empty: false
       datetime :stop_time
-      integer :total_time
-      string :crawlers
-      string :completed
-      string :failed
+      float :total_time
+      integer :concurrent_jobs
+      text :quenue
+      text :completed
+      text :failed
     end
 
     DB.create_table?(:runs) do
@@ -29,11 +26,11 @@ module Kimurai
       string :environment
       datetime :start_time, empty: false
       datetime :stop_time
-      integer :running_time
+      float :running_time
       foreign_key :session_id, :sessions
-      string :visits
-      string :items
-      string :error
+      text :visits
+      text :items
+      text :error
     end
 
     class Session < Sequel::Model(DB)
@@ -41,7 +38,7 @@ module Kimurai
 
       plugin :serialization
       plugin :serialization_modification_detection
-      serialize_attributes :json, :crawlers, :completed, :failed
+      serialize_attributes :json, :quenue, :completed, :failed
 
       unrestrict_primary_key
     end

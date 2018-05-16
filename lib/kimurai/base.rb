@@ -48,7 +48,8 @@ module Kimurai
     @default_options = {}
 
     def self.default_options
-      superclass.equal?(::Object) ? @default_options : superclass.default_options.deep_merge(@default_options || {})
+      superclass.equal?(::Object) ? @default_options :
+        superclass.default_options.deep_merge(@default_options || {})
     end
 
     def self.pipelines
@@ -64,7 +65,7 @@ module Kimurai
     def self.enable_stats
       @run = Stats::Run.create(info)
       callback = lambda do
-        running_time = (Time.now - info[:start_time]).to_i
+        running_time = (Time.now - info[:start_time]).round(3)
         @run.set(info.merge!(running_time: running_time))
         @run.save
       end
@@ -76,6 +77,10 @@ module Kimurai
     ###
 
     def self.start
+      # init info
+      info
+
+      # set settings
       Kimurai.current_crawler = name
       Capybara::Session.logger = Log.instance
 
@@ -83,8 +88,9 @@ module Kimurai
         Kimurai.timezone = timezone
       end
 
-      enable_stats
+      enable_stats if Kimurai.configuration.enable_stats
 
+      # initialization
       pipelines = self.pipelines.map do |pipeline|
         pipeline_class = pipeline.to_s.classify.constantize
         pipeline_class.crawler = self
@@ -112,7 +118,6 @@ module Kimurai
         crawler_instance.parse
       end
       info[:status] = :completed
-
     rescue => e
       info[:error] = e
       # info[:error_backtrace] = e.backtrace
@@ -122,7 +127,7 @@ module Kimurai
       # info # it will be returned as a result to a parallel output from command
     ensure
       info[:stop_time] = Time.now
-      info[:running_time] = (info[:stop_time] - info[:start_time]).to_i
+      info[:running_time] = (info[:stop_time] - info[:start_time]).round(3)
 
       message = "Crawler: stopped: #{info}"
       failed? ? Log.fatal(message) : Log.info(message)

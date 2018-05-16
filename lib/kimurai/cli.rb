@@ -25,22 +25,37 @@ module Kimurai
     desc "start_all", "Starts all crawlers in the project in quenue"
     option :jobs, aliases: :j, type: :numeric, banner: "The number of concurrent jobs"
     def start_all
-      require './config/application'
-      start_time = Time.now # fix to utc
-      session_timestamp = start_time.to_i
-
-      ENV.store("LOG_TO_FILE", "true")
-      ENV.store("SESSION_TIMESTAMP", session_timestamp.to_s)
-
-      crawlers = Base.descendants.select { |crawler_class| crawler_class.name != nil }
       jobs = options["jobs"] || 1
       raise "Jobs count can't be 0" if jobs == 0
 
-      puts ">> Starting session: #{session_timestamp}, crawlers in quenue: " \
-        "#{crawlers.map(&:name).join(', ')} (#{crawlers.size}), concurrent jobs: #{jobs}"
-      if at_start_callback = Kimurai.configuration.start_all_at_start_callback
-        at_start_callback.call(session_timestamp, crawlers, jobs)
+      # setup
+      require './config/application'
+
+      if timezone = Kimurai.configuration.timezone
+        Kimurai.timezone = timezone
       end
+
+      start_time = Time.now
+      session_id = start_time.to_i
+
+      ENV.store("LOG_TO_FILE", "true")
+      ENV.store("SESSION_ID", session_id.to_s)
+
+      crawlers = Base.descendants.select { |crawler_class| crawler_class.name != nil }
+
+      session_info = {
+        id: session_id,
+        start_time: start_time,
+        crawlers: crawlers.map(&:name)
+      }
+
+      register_session(session_info)
+
+      puts ">> Starting session: #{session_info[:id]}, crawlers in quenue: " \
+        "#{session_info[:crawlers].join(', ')} (#{session_info[:crawlers].size}), concurrent jobs: #{jobs}"
+      # if at_start_callback = Kimurai.configuration.start_all_at_start_callback
+      #   at_start_callback.call(session_id, crawlers, jobs)
+      # end
 
       at_crawler_start = ->(item, i) { puts "> Started: #{item.name}, index: #{i + 1}" }
 
@@ -60,16 +75,40 @@ module Kimurai
         # Failed crawler
       end
 
-      total_time = Time.now - start_time
-      puts "<< Finished session: #{session_timestamp}, total time: #{total_time}, " \
-        "completed: #{completed.map(&:name).join(', ')} (#{completed.size}), failed: #{failed.map(&:name).join(', ')} (#{failed.size})."
-      if at_finish_callback = Kimurai.configuration.start_all_at_finish_callback
-        at_finish_callback.call(session_timestamp, total_time, completed, failed)
-      end
+      stop_time = Time.now
+      total_time = (stop_time - start_time).to_i
+
+      session_info.merge!(
+        stop_time: stop_time,
+        total_time: total_time,
+        completed: completed.map(&:name),
+        failed: failed.map(&:name)
+      )
+
+      # puts "<< Finished session: #{session_id}, total time: #{total_time}, " \
+      #   "completed: #{completed.map(&:name).join(', ')} (#{completed.size}), failed: #{failed.map(&:name).join(', ')} (#{failed.size})."
+
+      # if at_finish_callback = Kimurai.configuration.start_all_at_finish_callback
+      #   at_finish_callback.call(session_id, total_time, completed, failed)
+      # end
+
+      update_session(session_info)
+    end
+
+    private
+
+    def register_session(session_info)
+      Stats::Session.create(session_info)
+    end
+
+    def update_session(session_info)
+      session = Stats::Session.find(session_info[:id]).first
+      session.set(session_info)
+      session.save
     end
 
     # def start_all_tsp
-      # to having shareable session_timestamp use env variable
+      # to having shareable session_id use env variable
       # https://www.unix.com/man-page/debian/1/tsp/
     # end
   end

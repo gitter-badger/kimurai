@@ -16,12 +16,14 @@ module Kimurai
         start_time: Time.new,
         stop_time: nil,
         running_time: nil,
+        session_id: ENV["SESSION_ID"]&.to_i,
         visits: Capybara::Session.stats,
         items: {
           processed: 0,
           saved: 0,
           drop_errors: {}
-        }
+        },
+        error: nil
       }
     end
 
@@ -59,10 +61,29 @@ module Kimurai
 
     ###
 
+    def self.enable_stats
+      @run = Stats::Run.create(info)
+      callback = lambda do
+        running_time = (Time.now - info[:start_time]).to_i
+        @run.set(info.merge!(running_time: running_time))
+        @run.save
+      end
+
+      at_exit { callback.call }
+      Concurrent::TimerTask.new(execution_interval: 5, timeout_interval: 5) { callback.call }.execute
+    end
+
+    ###
+
     def self.start
       Kimurai.current_crawler = name
       Capybara::Session.logger = Log.instance
-      info[:session_timestamp] = ENV["SESSION_TIMESTAMP"]&.to_i if ENV["SESSION_TIMESTAMP"]
+
+      if timezone = Kimurai.configuration.timezone
+        Kimurai.timezone = timezone
+      end
+
+      enable_stats
 
       pipelines = self.pipelines.map do |pipeline|
         pipeline_class = pipeline.to_s.classify.constantize
@@ -101,7 +122,7 @@ module Kimurai
       # info # it will be returned as a result to a parallel output from command
     ensure
       info[:stop_time] = Time.now
-      info[:running_time] = info[:stop_time] - info[:start_time]
+      info[:running_time] = (info[:stop_time] - info[:start_time]).to_i
 
       message = "Crawler: stopped: #{info}"
       failed? ? Log.fatal(message) : Log.info(message)
@@ -128,8 +149,10 @@ module Kimurai
 
     def request_to(handler, type = :get, url:, data: {})
       # todo: add post request option for mechanize
+      request_data = { url: url, data: data }
+
       page.visit(url)
-      send(handler, { url: url, data: data })
+      send(handler, request_data)
     end
 
     private

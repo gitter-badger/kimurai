@@ -21,12 +21,22 @@ module Kimurai
       Pathname.new('..').expand_path(File.dirname(__FILE__))
     end
 
+    # current crawler
     def current_crawler
       ENV["CURRENT_CRAWLER"]
     end
 
     def current_crawler=(value)
       ENV.store("CURRENT_CRAWLER", value)
+    end
+
+    # timezone
+    def timezone
+      ENV["TZ"]
+    end
+
+    def timezone=(value)
+      ENV.store("TZ", value)
     end
   end
 end

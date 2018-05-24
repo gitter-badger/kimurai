@@ -1,0 +1,38 @@
+<div class="table-responsive">
+  <table class="table table-hover table-sm">
+    <thead>
+      <tr>
+        <th scope="col"># id</th>
+        <th scope="col">Crawler</th>
+        <th scope="col">Status</th>
+        <th scope="col">Start time</th>
+        <th scope="col">Stop time</th>
+        <th scope="col">Running</th>
+        <th scope="col">Session</th>
+        <th scope="col" data-toggle="tooltip" title="Requests / Responses / Network Errors">Visits*</th>
+        <th scope="col" data-toggle="tooltip" title="Processed items / Saved items / Drop Errors">Items*</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% runs.each do |run| %>
+        <tr>
+          <th scope="row">
+            <a href="/runs/<%= run.id %>"><%= run.id %></a>
+          </th>
+          <td>
+            <a href="/crawlers/<%= run.crawler_id %>"><%= run.crawler_name %></a>
+          </td>
+          <td><%= get_badge(run.status) %></td>
+          <td><%= run.start_time %></td>
+          <td><%= run.stop_time %></td>
+          <td><%= run.running_time %></td>
+          <td>
+            <a href="/sessions/<%= run.session_id %>"><%= run.session_id %></a>
+          </td>
+          <td><%= minimize_stats(run.visits).join("/") %></td>
+          <td><%= minimize_stats(run.items).join("/") %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

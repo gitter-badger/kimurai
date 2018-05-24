@@ -1,4 +1,4 @@
-require 'kimurai/version'
+require_relative 'kimurai/version'
 
 require 'pathname'
 require 'ostruct'

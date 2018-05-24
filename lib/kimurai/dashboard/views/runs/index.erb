@@ -1,0 +1,9 @@
+<%= breadcrumbs("/" => "Home", "" => "Runs") %>
+
+<div class="row">
+  <div class="col-lg-12">
+    <h1>Runs</h1>
+    <%= render_filters(filters) if filters.any? %>
+    <%= erb :'runs/_table', locals: { runs: @runs } %>
+  </div>
+</div>

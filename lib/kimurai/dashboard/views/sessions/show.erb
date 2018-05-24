@@ -1,0 +1,83 @@
+<%= breadcrumbs("/" => "Home", "/sessions" => "Sessions", "" => @session.id) %>
+
+<div class="row">
+  <div class="col-lg-12">
+    <h1>Session #<%= @session.id %></h1>
+
+    <table class="table table-bordered">
+      <tbody>
+        <tr>
+          <th>ID</th>
+          <td><%= @session.id %></td>
+        </tr>
+        <tr>
+          <th>Status</th>
+          <td>
+            <%= get_badge(@session.status) %>
+            <% if error = @session.error %>
+              (<%= h(error) %>)
+            <% end %>
+          </td>
+        </tr>
+        <tr>
+          <th>Start time</th>
+          <td><%= @session.start_time %></td>
+        </tr>
+        <tr>
+          <th>Stop time</th>
+          <td><%= @session.stop_time %></td>
+        </tr>
+        <tr>
+          <th>Total time</th>
+          <td><%= @session.total_time %></td>
+        </tr>
+        <tr>
+          <th>Concurrent Jobs</th>
+          <td><%= @session.concurrent_jobs %></td>
+        </tr>
+        <tr>
+          <th>Crawlers list</th>
+          <td><%= convert_to_links(@session.crawlers, base: "/crawlers").join(", ") %></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <% if @session.processing? && queue = @session.crawlers_in_queue %>
+    <div class="col-lg-12 mb-4">
+      <h2>Queue <small class="text-muted"><%= queue.size %></small></h2>
+      <span><%= convert_to_links(queue, base: "/crawlers").join(", ") %></span>
+
+      <div class="progress" style="height: 1px;">
+        <div class="progress-bar" role="progressbar" style="width: <%= ((queue.size.to_f / @session.crawlers.size) * 100).to_i %>%;">
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="col-lg-12">
+    <h2>Runs
+      <small class="text-muted">
+        <%= @session.runs_dataset.count %>
+        (<a class="dotted gray" href="#running"><%= @session.running_runs.count %> running</a> /
+        <a class="dotted gray" href="#completed"><%= @session.completed_runs.count %> completed</a> /
+        <a class="dotted gray" href="#failed"><%= @session.failed_runs.count %> failed</a>)
+      </small>
+    </h2>
+
+    <% if @session.running_runs.any? %>
+      <p class="fancy-hr" id="running">Running</p>
+      <%= erb :'runs/_table', locals: { runs: @session.running_runs } %>
+    <% end %>
+
+    <% if @session.completed_runs.any? %>
+      <p class="fancy-hr" id="completed">Completed</p>
+      <%= erb :'runs/_table', locals: { runs: @session.completed_runs } %>
+    <% end %>
+
+    <% if @session.failed_runs.any? %>
+      <p class="fancy-hr" id="failed">Failed</p>
+      <%= erb :'runs/_table', locals: { runs: @session.failed_runs } %>
+    <% end %>
+  </div>
+</div>

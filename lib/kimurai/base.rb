@@ -8,10 +8,10 @@ module Kimurai
       attr_reader :name, :start_url
     end
 
-    def self.info
-      @info ||= {
-        name: name,
-        status: nil,
+    def self.run_info
+      @run_info ||= {
+        crawler_name: name,
+        status: :running,
         environment: Kimurai.env,
         start_time: Time.new,
         stop_time: nil,
@@ -30,15 +30,15 @@ module Kimurai
     ###
 
     def self.running?
-      info[:status] == :running
+      run_info[:status] == :running
     end
 
     def self.completed?
-      info[:status] == :completed
+      run_info[:status] == :completed
     end
 
     def self.failed?
-      info[:status] == :failed
+      run_info[:status] == :failed
     end
 
     ###
@@ -63,22 +63,37 @@ module Kimurai
     ###
 
     def self.enable_stats
-      @run = Stats::Run.create(info)
+      require 'kimurai/stats'
+
+      crawler = Stats::Crawler.find_or_create(name: name)
+      @run = crawler.add_run(run_info)
+
       callback = lambda do
-        running_time = (Time.now - info[:start_time]).round(3)
-        @run.set(info.merge!(running_time: running_time))
+        running_time = (Time.now - run_info[:start_time]).round(3)
+        @run.set(run_info.merge!(running_time: running_time))
         @run.save
       end
 
-      at_exit { callback.call }
-      Concurrent::TimerTask.new(execution_interval: 5, timeout_interval: 5) { callback.call }.execute
+      # crawler can be interrupted as well (ctl+c, or signterm), and in this
+      # case status will be :running still. It should be handled
+      at_exit do
+        if error = $!
+          # or maybe here should be different status, like stopped/interrupted?
+          # same with runner
+          run_info.merge!(status: :failed, error: error)
+        end
+
+        callback.call
+      end
+
+      Concurrent::TimerTask.new(execution_interval: 2, timeout_interval: 5) { callback.call }.execute
     end
 
     ###
 
     def self.start
       # init info
-      info
+      run_info
 
       # set settings
       Kimurai.current_crawler = name
@@ -88,7 +103,7 @@ module Kimurai
         Kimurai.timezone = timezone
       end
 
-      enable_stats if Kimurai.configuration.enable_stats
+      enable_stats if Kimurai.configuration.stats
 
       # initialization
       pipelines = self.pipelines.map do |pipeline|
@@ -111,25 +126,25 @@ module Kimurai
       end
 
       crawler_instance = self.new
-      info[:status] = :running
+      run_info[:status] = :running
       if start_url
         crawler_instance.request_to(:parse, url: start_url)
       else
         crawler_instance.parse
       end
-      info[:status] = :completed
+      run_info[:status] = :completed
     rescue => e
-      info[:error] = e
-      # info[:error_backtrace] = e.backtrace
-      info[:status] = :failed
+      run_info[:error] = e
+      # run_info[:error_backtrace] = e.backtrace
+      run_info[:status] = :failed
       raise e
       # exit 1
-      # info # it will be returned as a result to a parallel output from command
+      # run_info # it will be returned as a result to a parallel output from command
     ensure
-      info[:stop_time] = Time.now
-      info[:running_time] = (info[:stop_time] - info[:start_time]).round(3)
+      run_info[:stop_time] = Time.now
+      run_info[:running_time] = (run_info[:stop_time] - run_info[:start_time]).round(3)
 
-      message = "Crawler: stopped: #{info}"
+      message = "Crawler: stopped: #{run_info}"
       failed? ? Log.fatal(message) : Log.info(message)
     end
 
@@ -175,21 +190,21 @@ module Kimurai
     end
 
     def pipeline_item(item)
-      self.class.info[:items][:processed] += 1
+      self.class.run_info[:items][:processed] += 1
 
       @pipelines.each do |pipeline|
         item = pipeline.process_item(item)
       end
 
-      self.class.info[:items][:saved] += 1
+      self.class.run_info[:items][:saved] += 1
       Log.info "Pipeline: saved item: #{item.to_json}"
     rescue => e
       error = e.inspect
-      self.class.info[:items][:drop_errors][error] ||= 0
-      self.class.info[:items][:drop_errors][error] += 1
+      self.class.run_info[:items][:drop_errors][error] ||= 0
+      self.class.run_info[:items][:drop_errors][error] += 1
       Log.error "Pipeline: dropped item: #{error}: #{item}"
     ensure
-      Log.info "Stats items: processed: #{self.class.info[:items][:processed]}, saved: #{self.class.info[:items][:saved]}"
+      Log.info "Stats items: processed: #{self.class.run_info[:items][:processed]}, saved: #{self.class.run_info[:items][:saved]}"
     end
 
     ###

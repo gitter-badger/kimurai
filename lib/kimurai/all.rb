@@ -1,4 +1,4 @@
-# except stats.rb
+# except stats.rb, dashboard
 
 require 'active_support'
 require 'active_support/core_ext'

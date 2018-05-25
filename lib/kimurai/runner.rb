@@ -1,4 +1,4 @@
-require 'parallel'
+require 'pmap'
 
 module Kimurai
   class Runner
@@ -18,6 +18,8 @@ module Kimurai
     def run!
       start_time = Time.now
       session_id = start_time.to_i
+      running_pids = []
+
       ENV.store("SESSION_ID", session_id.to_s)
 
       session_info = {
@@ -29,10 +31,12 @@ module Kimurai
         crawlers: crawlers.map(&:name)
       }
 
-      # define at exit first, in case if at_start_callback will fail
       at_exit do
         # prevent queue to process new intems while executing at_exit body
         Thread.list.each { |t| t.kill if t != Thread.main }
+
+        # kill current running crawlers
+        running_pids.each { |pid| Process.kill("INT", pid) }
 
         error = $!
         stop_time = Time.now
@@ -56,20 +60,17 @@ module Kimurai
         at_start_callback.call(session_info)
       end
 
-      at_crawler_start = ->(item, i) { puts "> Runner: started crawler: #{item}, index: #{i + 1}" }
-      at_crawler_finish = lambda do |item, i, result|
-        status = (result == false ? :failed : :completed)
-        puts "< Runner: stopped crawler: #{item}, index: #{i + 1}, status: #{status}"
-      end
-
-      options = { in_threads: jobs, start: at_crawler_start, finish: at_crawler_finish }
-      Parallel.each(crawlers, options) do |crawler_class|
+      crawlers.peach_with_index(jobs) do |crawler_class, i|
         crawler_name = crawler_class.name
-        command = "bundle exec kimurai start #{crawler_name} > log/#{crawler_name}.log 2>&1"
 
-        system(command)
-        # pid = spawn(command)
-        # Process.wait pid
+        puts "> Runner: started crawler: #{crawler_name}, index: #{i}"
+        pid = Process.spawn("bundle", "exec", "kimurai", "start", crawler_name, [:out, :err] => "log/#{crawler_name}.log")
+        running_pids << pid
+
+        Process.wait pid
+        running_pids.delete(pid)
+        # Process.detach pid
+        puts "< Runner: stopped crawler: #{crawler_name}, index: #{i}"
       end
     end
 

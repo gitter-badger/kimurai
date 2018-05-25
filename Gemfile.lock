@@ -9,7 +9,7 @@ PATH
       headless
       murmurhash3
       nokogiri
-      parallel
+      pmap
       poltergeist
       selenium-webdriver
       sequel
@@ -74,8 +74,8 @@ GEM
     nokogiri (1.8.2)
       mini_portile2 (~> 2.3.0)
     ntlm-http (0.1.1)
-    parallel (1.12.1)
-    poltergeist (1.18.0)
+    pmap (1.1.1)
+    poltergeist (1.18.1)
       capybara (>= 2.1, < 4)
       cliver (~> 0.3.1)
       websocket-driver (>= 0.2.0)

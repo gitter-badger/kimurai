@@ -21,19 +21,9 @@ module Kimurai
 
       private_class_method
       def create_default_logger
-        crawler_name = ENV["CURRENT_CRAWLER"]
-        logger =
-          if ENV["LOG_TO_FILE"] == "true"
-            log_file = File.open("log/#{crawler_name}.log", File::WRONLY | File::APPEND | File::TRUNC | File::CREAT)
-            log_file.sync = true
-
-            Logger.new(log_file, formatter: LoggerFormatter)
-          else
-            Logger.new(STDOUT, formatter: LoggerFormatter)
-          end
-
+        logger = Logger.new(STDOUT, formatter: LoggerFormatter)
         logger.level = "Logger::#{ENV.fetch('LOGGER_LEVEL', 'DEBUG')}".constantize
-        logger.progname = crawler_name
+        logger.progname = ENV["CURRENT_CRAWLER"]
         logger
       end
     end

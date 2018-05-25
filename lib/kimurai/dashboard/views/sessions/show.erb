@@ -45,10 +45,10 @@
 
   <% if @session.processing? && queue = @session.crawlers_in_queue %>
     <div class="col-lg-12 mb-4">
-      <h2>Queue <small class="text-muted"><%= queue.size %></small></h2>
+      <h2>In queue <small class="text-muted"><%= queue.size %></small></h2>
       <span><%= convert_to_links(queue, base: "/crawlers").join(", ") %></span>
 
-      <div class="progress" style="height: 1px;">
+      <div class="progress mt-2" style="height: 1px;">
         <div class="progress-bar" role="progressbar" style="width: <%= ((queue.size.to_f / @session.crawlers.size) * 100).to_i %>%;">
         </div>
       </div>

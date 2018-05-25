@@ -11,6 +11,8 @@ module Kimurai
   module Dashboard
     class App < Sinatra::Base
       enable :logging
+      set :environment, Kimurai.env
+
       register Sinatra::RespondWith,
                Sinatra::Namespace
 

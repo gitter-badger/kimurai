@@ -1,3 +1,5 @@
+require 'parallel'
+
 module Kimurai
   class Runner
     attr_reader :jobs, :crawlers
@@ -16,8 +18,6 @@ module Kimurai
     def run!
       start_time = Time.now
       session_id = start_time.to_i
-
-      ENV.store("LOG_TO_FILE", "true")
       ENV.store("SESSION_ID", session_id.to_s)
 
       session_info = {
@@ -31,27 +31,22 @@ module Kimurai
 
       # define at exit first, in case if at_start_callback will fail
       at_exit do
-        # in ruby all at_exits in forks executed as well.
-        # don't call at exit body if process is fork.
-        # here, Parallel.worker_number will be nil in parent process, but will have number
-        # if process is fork.
-        if Parallel.worker_number.nil?
-          # if process was interrupted, $! will not be a nil
-          error = $!
-          stop_time = Time.now
+        # prevent queue to process new intems while executing at_exit body
+        Thread.list.each { |t| t.kill if t != Thread.main }
 
-          if error.nil?
-            session_info.merge!(status: :completed, stop_time: stop_time)
-          else
-            # maybe fix to status == stopped or interrupted
-            session_info.merge!(status: :failed, error: error.inspect, stop_time: stop_time)
-          end
+        error = $!
+        stop_time = Time.now
 
-          puts ">> Runner: stopped session: #{session_info}"
-          update_session(session_info) if Kimurai.configuration.stats
-          if at_stop_callback = Kimurai.configuration.runner_at_stop_callback
-            at_stop_callback.call(session_info)
-          end
+        if error.nil?
+          session_info.merge!(status: :completed, stop_time: stop_time)
+        else
+          session_info.merge!(status: :failed, error: error.inspect, stop_time: stop_time)
+        end
+
+        puts ">> Runner: stopped session: #{session_info}"
+        update_session(session_info) if Kimurai.configuration.stats
+        if at_stop_callback = Kimurai.configuration.runner_at_stop_callback
+          at_stop_callback.call(session_info)
         end
       end
 
@@ -61,17 +56,20 @@ module Kimurai
         at_start_callback.call(session_info)
       end
 
-      at_crawler_start = ->(item, i) { puts "> Runner: started crawler: #{item.name}, index: #{i + 1}" }
+      at_crawler_start = ->(item, i) { puts "> Runner: started crawler: #{item}, index: #{i + 1}" }
       at_crawler_finish = lambda do |item, i, result|
-        status = result.nil? ? :failed : result
-        puts "< Runner: stopped crawler: #{item.name}, index: #{i + 1}, status: #{status}"
+        status = (result == false ? :failed : :completed)
+        puts "< Runner: stopped crawler: #{item}, index: #{i + 1}, status: #{status}"
       end
 
-      options = { in_processes: jobs, isolation: true, start: at_crawler_start, finish: at_crawler_finish }
+      options = { in_threads: jobs, start: at_crawler_start, finish: at_crawler_finish }
       Parallel.each(crawlers, options) do |crawler_class|
-        crawler_class.start
-      rescue => e
-        # Failed crawler
+        crawler_name = crawler_class.name
+        command = "bundle exec kimurai start #{crawler_name} > log/#{crawler_name}.log 2>&1"
+
+        system(command)
+        # pid = spawn(command)
+        # Process.wait pid
       end
     end
 

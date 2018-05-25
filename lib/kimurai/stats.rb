@@ -2,8 +2,6 @@ require 'sequel'
 require 'sqlite3'
 require 'json'
 
-Sequel::Model.plugin :json_serializer
-
 module Kimurai
   class Stats
     DB = Sequel.connect(Kimurai.configuration.stats_database)
@@ -31,6 +29,7 @@ module Kimurai
       text :visits
       text :items
       text :error
+      text :server
     end
 
     DB.create_table?(:crawlers) do
@@ -41,6 +40,7 @@ module Kimurai
     class Session < Sequel::Model(DB)
       one_to_many :runs
 
+      plugin :json_serializer
       plugin :serialization
       plugin :serialization_modification_detection
       serialize_attributes :json, :crawlers
@@ -77,9 +77,10 @@ module Kimurai
       many_to_one :session
       many_to_one :crawler
 
+      plugin :json_serializer
       plugin :serialization
       plugin :serialization_modification_detection
-      serialize_attributes :json, :visits, :items
+      serialize_attributes :json, :visits, :items, :server
 
       # scopes
       dataset_module do
@@ -95,6 +96,8 @@ module Kimurai
 
     class Crawler < Sequel::Model(DB)
       one_to_many :runs
+
+      plugin :json_serializer
 
       def current_session
         session = Session.find(status: "processing")

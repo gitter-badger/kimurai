@@ -1,6 +1,7 @@
 require 'json'
 require 'concurrent'
 require 'uri'
+require 'socket'
 
 module Kimurai
   class Base
@@ -23,7 +24,11 @@ module Kimurai
           saved: 0,
           drop_errors: {}
         },
-        error: nil
+        error: nil,
+        server: {
+          ip: Socket.ip_address_list.find { |ai| ai.ipv4? && !ai.ipv4_loopback? }.ip_address,
+          process_pid: Process.pid
+        }
       }
     end
 
@@ -74,18 +79,10 @@ module Kimurai
         @run.save
       end
 
-      # crawler can be interrupted as well (ctl+c, or signterm), and in this
-      # case status will be :running still. It should be handled
-      at_exit do
-        if error = $!
-          # or maybe here should be different status, like stopped/interrupted?
-          # same with runner
-          run_info.merge!(status: :failed, error: error)
-        end
+      # Ensure to update run status the last time at process exit (handle ctr-c as well)
+      at_exit { callback.call }
 
-        callback.call
-      end
-
+      # update run status in database every 2 seconds
       Concurrent::TimerTask.new(execution_interval: 2, timeout_interval: 5) { callback.call }.execute
     end
 
@@ -127,22 +124,28 @@ module Kimurai
 
       crawler_instance = self.new
       run_info[:status] = :running
+
       if start_url
         crawler_instance.request_to(:parse, url: start_url)
       else
         crawler_instance.parse
       end
+
       run_info[:status] = :completed
     rescue => e
-      run_info[:error] = e
-      # run_info[:error_backtrace] = e.backtrace
-      run_info[:status] = :failed
+      # maybe include backtrace
+      run_info.merge!(status: :failed, error: e)
       raise e
-      # exit 1
-      # run_info # it will be returned as a result to a parallel output from command
     ensure
-      run_info[:stop_time] = Time.now
-      run_info[:running_time] = (run_info[:stop_time] - run_info[:start_time]).round(3)
+      # handle ctrl-c/SIGTERM case, where $! will have an exeption, but rescue
+      # block above wasn't been executed so the status is still :running
+      if !failed? && error = $!
+        run_info.merge!(status: :failed, error: error)
+      end
+
+      stop_time  = Time.now
+      total_time = (stop_time - run_info[:start_time]).round(3)
+      run_info.merge!(stop_time: stop_time, running_time: total_time)
 
       message = "Crawler: stopped: #{run_info}"
       failed? ? Log.fatal(message) : Log.info(message)
@@ -172,6 +175,7 @@ module Kimurai
       request_data = { url: url, data: data }
 
       page.visit(url)
+      # change to public send
       send(handler, request_data)
     end
 

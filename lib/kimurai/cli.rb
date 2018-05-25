@@ -1,5 +1,4 @@
 require 'thor'
-require 'parallel'
 
 module Kimurai
   class CLI < Thor
@@ -34,19 +33,11 @@ module Kimurai
 
     # In config there should be enabled stats and database uri
     desc "dashboard", "Show full report stats about runs and sessions"
-    # option :port, aliases: :p, type: :numeric, default: 3001, banner: "Specify port for a dashboard server"
     def dashboard
       require './config/application'
       require 'kimurai/dashboard/app'
 
       Kimurai::Dashboard::App.run!
     end
-
-    private
-
-    # def start_all_tsp
-      # to having shareable session_id use env variable
-      # https://www.unix.com/man-page/debian/1/tsp/
-    # end
   end
 end

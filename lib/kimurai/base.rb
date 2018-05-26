@@ -88,7 +88,7 @@ module Kimurai
 
     ###
 
-    def self.start
+    def self.preload!
       # init info
       run_info
 
@@ -121,6 +121,10 @@ module Kimurai
           Log.error "Crawler: there is an error in pipeline while trying to call .close_crawler method: #{e.class}, #{e.message}"
         end
       end
+    end
+
+    def self.start
+      preload!
 
       crawler_instance = self.new
       run_info[:status] = :running
@@ -177,6 +181,10 @@ module Kimurai
       page.visit(url)
       # change to public send
       send(handler, request_data)
+    end
+
+    def console
+      binding.irb
     end
 
     private

@@ -32,9 +32,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "concurrent-ruby"
   spec.add_dependency "headless"
-  # spec.add_dependency "parallel"
   spec.add_dependency "pmap"
-
 
   spec.add_dependency "sequel"
   spec.add_dependency "sqlite3"

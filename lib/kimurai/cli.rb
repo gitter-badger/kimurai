@@ -6,7 +6,7 @@ module Kimurai
     def start(crawler_name)
       require './config/application'
 
-      crawler_class = Base.descendants.find { |crawler_class| crawler_class.name == crawler_name }
+      crawler_class = find_crawler(crawler_name)
       crawler_class.start
     end
 
@@ -38,6 +38,22 @@ module Kimurai
       require 'kimurai/dashboard/app'
 
       Kimurai::Dashboard::App.run!
+    end
+
+    desc "console", "Start console mode for a specific crawler"
+    def console(crawler_name)
+      require './config/application'
+
+      crawler_class = find_crawler(crawler_name)
+      crawler_class.preload!
+
+      crawler_class.new.console
+    end
+
+    private
+
+    def find_crawler(crawler_name)
+      Base.descendants.find { |crawler_class| crawler_class.name == crawler_name }
     end
   end
 end

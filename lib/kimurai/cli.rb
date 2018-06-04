@@ -22,6 +22,8 @@ module Kimurai
     desc "generate", "Generator, available types: crawler"
     option :start_url, type: :string, banner: "Start url for a new crawler crawler"
     def generate(generator_type, *args)
+      raise "Can't find a project" unless Dir.exists? "crawlers"
+
       if generator_type == "crawler"
         crawler_name = args.shift
         crawler_path = "crawlers/#{crawler_name}.rb"

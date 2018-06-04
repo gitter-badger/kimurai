@@ -3,6 +3,8 @@ class ApplicationCrawler < Kimurai::Base
   # Don't set @name in the ApplicationCrawler class. It's a base crawler class for your
   # crawlers. All crawler classes with defined @name can be started within cli
   # by `$ kimurai start crawler_name`
+  # You can simply use CLI generator `bundle exec kumurai generate crawler example.com --site_url https://example.com/`
+  # to create start template of a crawler inherited from ApplicationCrawler
   #@name = "fdsfs" #, multilangual: :en
 
   # Av. default drivers: :poltergeist_phantomjs, :selenium_firefox, :selenium_chrome, :mechanize.
@@ -15,8 +17,8 @@ class ApplicationCrawler < Kimurai::Base
   @driver = :mechanize
 
   # Pipelines list, by order.
-  # Default pipelines for all crawlers. Set different order in the custom crawler
-  # if you need it to.
+  # Default pipelines for all crawlers inherited from ApplicationCrawler.
+  # Set different order in the custom crawler if you need it to.
   @pipelines = [:modificator, :validator, :saver]
 
   # default options for a default drivers.

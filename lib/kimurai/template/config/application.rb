@@ -26,7 +26,9 @@ Kimurai.configure do |config|
   # config.timezone = "Europe/Samara"
 
   # enable database stats
-  config.stats = true
-  # set database url (sequel scheme) for stats
-  config.stats_database = "sqlite://db/crawlers_runs_#{Kimurai.env}.sqlite3"
+  # config.stats = true
+
+  # set database url (sequel scheme) for stats (required if config.stats set to true)
+  # default database is sqlite3
+  # config.stats_database = "sqlite://db/crawlers_runs_#{Kimurai.env}.sqlite3"
 end

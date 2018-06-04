@@ -19,7 +19,7 @@ module Kimurai
       puts "New kimurai project has been successfully created!"
     end
 
-    desc "generate_crawler", "Generate new crawler in project directory"
+    desc "generate", "Generator, available types: crawler"
     option :start_url, type: :string, banner: "Start url for a new crawler crawler"
     def generate(generator_type, *args)
       if generator_type == "crawler"

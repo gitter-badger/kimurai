@@ -66,6 +66,9 @@ module Kimurai
 
       @conf[:session_options][:before_request][:set_random_user_agent] =
         options[:session_options][:before_request][:set_random_user_agent].presence
+
+      @conf[:session_options][:before_request][:delay] =
+        options[:session_options][:before_request][:delay].presence
     end
 
     def build
@@ -124,6 +127,7 @@ module Kimurai
       check_recreate_if_memory_for_selenium_poltergeist
       check_before_request_clear_cookies
       check_before_request_set_random_user_agent_for_mechanize_poltergeist
+      check_before_request_set_delay
       @session
     end
 
@@ -278,6 +282,13 @@ module Kimurai
         else
           Log.error "Session builder: to set before_request_set_random_user_agent for #{driver_name}, provide a user_agents_list as well"
         end
+      end
+    end
+
+    def check_before_request_set_delay
+      if delay = @conf[:session_options][:before_request][:delay]
+        @session.options[:before_request_delay] = delay
+        Log.debug "Session builder: enabled before_request_delay for #{driver_name} session"
       end
     end
   end

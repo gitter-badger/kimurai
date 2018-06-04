@@ -47,6 +47,8 @@ class ApplicationCrawler < Kimurai::Base
     # Format: array of strings. Example of user agent string: "Some user agent".
     # If provided more than one, user agent will be choosed randomly for each new session.
     # Works for all drivers
+    # Note for chrome: keep in mind what chrome in headless mode has headless user-agent,
+    # so it's probably better to change it if you use chrome in headless mode
     user_agents_list: [],
     # List of proxies.
     # Format: array of hashes.
@@ -90,10 +92,21 @@ class ApplicationCrawler < Kimurai::Base
         if_memory_more_than: 500_000 # done
       },
       before_request: {
-        set_random_proxy: true, # works only for poltergeist and mechanize
-        set_random_user_agent: true, # done # works only for poltergeist and mechanize
-        clear_cookies: true, # done # works for all # or
-        clear_and_set_default_cookies: true # works for all # with some restrictions for selenium
+        # works only for poltergeist and mechanize
+        set_random_proxy: true,
+        # done # works only for poltergeist and mechanize
+        set_random_user_agent: true,
+        # done # works for all
+        clear_cookies: true,
+        # works for all # with some restrictions for selenium
+        clear_and_set_default_cookies: true,
+        # Global option to set delay for a browser's session.
+        # If present, browser will wait before process `visit` method to a url.
+        # Can be integer (5) or range (2..5). If range, delay number will be choosen randomly.
+        # Note: you can set cusom delay for a custom request within `#request_to` method,
+        # example: `request_to(:parse_listing, url: url, delay: 3..6)`,
+        # or even directly while calling `session_instance#visit`, example: `browser.visit(url, delay: 3)`
+        delay: 0,
       }
     },
     custom_options_for_driver: {

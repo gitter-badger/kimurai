@@ -21,7 +21,7 @@ module Capybara
       @logger ||= Logger.new(STDOUT)
     end
 
-    # todo refactor, change name
+    # todo refactor, change name (to `settings` maybe?)
     def self.options
       @options ||= {}
     end
@@ -34,9 +34,9 @@ module Capybara
       })
     end
 
-    def self.current_instances
-      ObjectSpace.each_object(self).to_a
-    end
+    # def self.current_instances
+    #   ObjectSpace.each_object(self).to_a
+    # end
 
     ###
 
@@ -53,8 +53,11 @@ module Capybara
       }
     end
 
+    # ToDo: maybe merge #post_request to this method. Something like
+    # visit(visit_url, method: :get, delay:)
     alias_method :original_visit, :visit
-    def visit(visit_uri)
+    def visit(visit_uri, delay: options[:before_request_delay])
+      process_delay(delay) if delay
       check_request_options
 
       self.class.stats[:requests] += 1
@@ -78,6 +81,7 @@ module Capybara
     def post_request(url, data:, headers: { "Content-Type" => "application/x-www-form-urlencoded" })
       if driver_type == :mechanize
         begin
+          set_delay(delay) if delay
           check_request_options
 
           self.class.stats[:requests] += 1
@@ -103,6 +107,7 @@ module Capybara
     # to do: set restriction to mechanize
     # notice: not safe with #recreate_driver! (any interactions with more
     # than one window)
+    # ToDo: add description how to use this method
     def within_new_window_by(action: nil, url: nil)
       case
       when action
@@ -123,17 +128,18 @@ module Capybara
       end
     end
 
-    def response
-      current_hash = ::MurmurHash3::V32.str_hash(body)
-      if current_hash != @page_hash || @response.nil?
-        logger.debug "Session: Getting new response..."
+    def current_response
+      # current_hash = ::MurmurHash3::V32.str_hash(body)
+      # if current_hash != @page_hash || @response.nil?
+      #   # logger.debug "Session: Getting new response..."
 
-        @page_hash = current_hash
-        @response = Nokogiri::HTML(body)
-      else
-        logger.debug "Session: Hash is the same, use current one response."
-        @response
-      end
+      #   @page_hash = current_hash
+      # @current_response = Nokogiri::HTML(body)
+      Nokogiri::HTML(body)
+      # else
+      #   # logger.debug "Session: Hash is the same, use current one response."
+      #   @response
+      # end
     end
 
     def resize_to(width, height)
@@ -159,6 +165,13 @@ module Capybara
       memory = current_memory
       stats[:memory] << memory
       logger.debug "Session: current_memory: #{memory}"
+    end
+
+    def process_delay(delay)
+      interval = delay.class == Range ? rand(delay) : delay
+      logger.debug "Session: sleeping (#{interval}) before request..."
+
+      sleep interval
     end
 
     def check_request_options

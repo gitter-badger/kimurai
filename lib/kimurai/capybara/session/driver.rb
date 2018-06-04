@@ -5,8 +5,8 @@ module Capybara
     # as you can see, driver don't created at the same time with session
     # driver created later, at the first call of #driver method. For example
     # at the first #visit (because visit it's a wrapper for driver.visit)
-    # And this is exact reason why driver_pid will is nil, until driver
-    # will be created (def create_session_driver)
+    # And this is exact reason why driver_pid will be nil, until driver
+    # will be created (`#create_session_driver`)
     def driver
       @driver ||= create_session_driver
     end

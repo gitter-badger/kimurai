@@ -175,12 +175,12 @@ module Kimurai
         .map { |pipeline| pipeline.to_s.classify.constantize.new }
     end
 
-    def request_to(handler, type = :get, url:, data: {})
+    def request_to(handler, type = :get, url:, data: {}, delay: nil)
       # todo: add post request option for mechanize
       request_data = { url: url, data: data }
 
-      browser.visit(url)
-      public_send(handler, request_data)
+      delay ? browser.visit(url, delay: delay) : browser.visit(url)
+      public_send(handler, request_data.merge(doc: browser.current_response))
     end
 
     def console
@@ -197,9 +197,9 @@ module Kimurai
       @browser ||= SessionBuilder.new(@driver, options: @options).build
     end
 
-    def response
-      browser.response
-    end
+    # def response
+    #   browser.response
+    # end
 
     def pipeline_item(item)
       self.class.run_info[:items][:processed] += 1
@@ -246,6 +246,9 @@ module Kimurai
           part.each do |request_data|
             crawler.public_send(:request_to, handler, request_data)
           end
+
+          # quit after all is done
+          # crawler.
         end
         # add delay between starting threads
         sleep 0.5

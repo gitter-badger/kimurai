@@ -5,6 +5,7 @@ require 'active_support/core_ext'
 require 'concurrent'
 
 require_relative 'core_ext/numeric'
+require_relative 'core_ext/string'
 
 require_relative 'capybara/default_configuration'
 require_relative 'capybara/session'

@@ -3,12 +3,13 @@ git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
 ruby '2.5.0'
 
+# framework
 gem 'kimurai', git: "https://github.com/vfreefly/kimurai"
+# require files in directory and child directories recursively
+gem 'require_all'
 
 group :development do
   gem 'byebug', platforms: [:mri, :mingw, :x64_mingw]
   gem 'pry'
 end
 
-# require files in directory and child directories recursively
-gem 'require_all'

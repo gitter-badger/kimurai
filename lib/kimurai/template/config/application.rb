@@ -31,4 +31,7 @@ Kimurai.configure do |config|
   # set database url (sequel scheme) for stats (required if config.stats set to true)
   # default database is sqlite3
   # config.stats_database = "sqlite://db/crawlers_runs_#{Kimurai.env}.sqlite3"
+
+  # enable colorizer (works only in development mode)
+  config.colorize_logger = true
 end

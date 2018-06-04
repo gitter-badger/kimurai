@@ -1,5 +1,6 @@
 require 'logger'
 require 'forwardable'
+require 'rbcat'
 
 module Kimurai
   class Log
@@ -9,6 +10,13 @@ module Kimurai
         thread_type = Thread.main == Thread.current ? "Main" : "Child"
         output = "%s, [%s#%d] [%s: %s] %5s -- %s: %s\n"
           .freeze % [severity[0..0], datetime, $$, thread_type, current_thread_id, severity, progname, msg]
+
+        if Kimurai.configuration.colorize_logger && Kimurai.env == "development"
+          colorizer = Rbcat::Colorizer.new(predefined: [:jsonhash, :logger])
+          colorizer.colorize(output)
+        else
+          output
+        end
       end
 
     class << self

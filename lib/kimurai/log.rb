@@ -1,5 +1,5 @@
-require "logger"
-# require "forwardable"
+require 'logger'
+require 'forwardable'
 
 module Kimurai
   class Log
@@ -20,11 +20,12 @@ module Kimurai
       end
 
       private_class_method
+
       def create_default_logger
-        logger = Logger.new(STDOUT, formatter: LoggerFormatter)
-        logger.level = "Logger::#{ENV.fetch('LOGGER_LEVEL', 'DEBUG')}".constantize
-        logger.progname = ENV["CURRENT_CRAWLER"]
-        logger
+        level = "Logger::#{ENV.fetch('LOGGER_LEVEL', 'DEBUG')}".constantize
+        Logger.new(STDOUT, formatter: LoggerFormatter,
+                           level: level,
+                           progname: ENV["CURRENT_CRAWLER"])
       end
     end
   end

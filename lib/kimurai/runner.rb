@@ -27,6 +27,7 @@ module Kimurai
         status: :processing,
         start_time: start_time,
         stop_time: nil,
+        environment: Kimurai.env,
         concurrent_jobs: jobs,
         crawlers: crawlers.map(&:name)
       }
@@ -64,12 +65,11 @@ module Kimurai
         crawler_name = crawler_class.name
 
         puts "> Runner: started crawler: #{crawler_name}, index: #{i}"
-        pid = Process.spawn("bundle", "exec", "kimurai", "start", crawler_name, [:out, :err] => "log/#{crawler_name}.log")
+        pid = spawn("bundle", "exec", "kimurai", "start", crawler_name, [:out, :err] => "log/#{crawler_name}.log")
         running_pids << pid
 
         Process.wait pid
         running_pids.delete(pid)
-        # Process.detach pid
         puts "< Runner: stopped crawler: #{crawler_name}, index: #{i}"
       end
     end

@@ -15,7 +15,7 @@
           <td>
             <%= get_badge(@session.status) %>
             <% if error = @session.error %>
-              (<%= h(error) %>)
+              <i>(<%= h(error) %>)</i>
             <% end %>
           </td>
         </tr>
@@ -29,7 +29,11 @@
         </tr>
         <tr>
           <th>Total time</th>
-          <td><%= @session.total_time %></td>
+          <td><%= @session.total_time.duration %></td>
+        </tr>
+        <tr>
+          <th>Environment</th>
+          <td><%= @session.environment %></td>
         </tr>
         <tr>
           <th>Concurrent Jobs</th>

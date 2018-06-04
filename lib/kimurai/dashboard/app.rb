@@ -3,6 +3,7 @@ require 'sinatra/respond_with'
 require 'sinatra/json'
 require 'sinatra/namespace'
 require 'sinatra/reloader'
+require "sinatra/streaming"
 
 require_relative '../stats'
 require_relative 'helpers'
@@ -11,7 +12,7 @@ module Kimurai
   module Dashboard
     class App < Sinatra::Base
       enable :logging
-      set :environment, Kimurai.env
+      set :environment, Kimurai.env.to_sym
 
       register Sinatra::RespondWith,
                Sinatra::Namespace
@@ -33,6 +34,8 @@ module Kimurai
         alias_method :h, :escape_html
       end
 
+      helpers Sinatra::Streaming
+
       ###
 
       get "/" do
@@ -53,8 +56,6 @@ module Kimurai
         get "/:id" do
           @session = Stats::Session.find(id: params[:id].to_i)
           halt "Error, can't find session!" unless @session
-
-          # binding.pry
 
           respond_to do |f|
             f.html { erb :'sessions/show' }
@@ -78,6 +79,31 @@ module Kimurai
           end
         end
 
+        get "/:id" do
+          @run = Stats::Run.find(id: params[:id].to_i)
+          halt "Error, can't find session!" unless @run
+
+          # byebug
+          respond_to do |f|
+            f.html {
+              erb :'runs/show', locals: { difference: @run.difference_between_previous_run }
+            }
+          end
+        end
+
+        get "/:id/log" do
+          @run = Stats::Run.find(id: params[:id].to_i)
+          halt "Error, can't find session!" unless @run
+
+          log_name = "./log/#{@run.crawler_name}.log"
+
+          if @run.latest? && File.exists?(log_name)
+            content_type 'text/event-stream'
+            File.readlines(log_name)
+          else
+            halt "Log file is not available for this run"
+          end
+        end
       end
 
       namespace "/crawlers" do

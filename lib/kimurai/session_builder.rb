@@ -25,6 +25,7 @@ module Kimurai
         raise ConfigurationError, message
       end
 
+      # refactor it just to use options instead of @conf. It's just a duplication
       @conf = Hash.new { |l, k| l[k] = Hash.new(&l.default_proc) }
 
       @driver_name = driver
@@ -142,7 +143,8 @@ module Kimurai
           driver = Capybara::Mechanize::Driver.new("app")
           # refactor, maybe there is a way to set settings as options for mechanize
           driver.configure do |a|
-            a.history.max_size = 2
+            # don't set to zero
+            a.history.max_size = 3
           end
           driver
         end
@@ -166,6 +168,7 @@ module Kimurai
           js_errors: false,
           debug: false,
           inspector: false,
+          # timeout: 10,
           phantomjs_options: []
         }
       end

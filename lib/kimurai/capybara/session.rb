@@ -1,5 +1,6 @@
 require 'nokogiri'
 require 'murmurhash3'
+require 'concurrent'
 require 'capybara'
 
 require_relative 'session/driver'
@@ -26,7 +27,11 @@ module Capybara
     end
 
     def self.stats
-      @stats ||= { requests: 0, responses: 0, requests_errors: {}}
+      @stats ||= Concurrent::Hash.new.merge({
+        requests: 0,
+        responses: 0,
+        requests_errors: {}
+      })
     end
 
     def self.current_instances
@@ -40,7 +45,12 @@ module Capybara
     end
 
     def stats
-      @stats ||= { requests: 0, responses: 0, memory: [0], requests_errors: {}}
+      @stats ||= {
+        requests: 0,
+        responses: 0,
+        requests_errors: {},
+        memory: [0]
+      }
     end
 
     alias_method :original_visit, :visit

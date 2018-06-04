@@ -10,7 +10,7 @@ module Kimurai
     end
 
     def self.run_info
-      @run_info ||= {
+      @run_info ||= Concurrent::Hash.new.merge({
         crawler_name: name,
         status: :running,
         environment: Kimurai.env,
@@ -29,7 +29,7 @@ module Kimurai
           ip: Socket.ip_address_list.find { |ai| ai.ipv4? && !ai.ipv4_loopback? }.ip_address,
           process_pid: Process.pid
         }
-      }
+      })
     end
 
     ###
@@ -118,7 +118,8 @@ module Kimurai
           pipeline.close_crawler if pipeline.respond_to? :close_crawler
         rescue => e
           # ? # or create separate at_exit for each pipeline
-          Log.error "Crawler: there is an error in pipeline while trying to call .close_crawler method: #{e.class}, #{e.message}"
+          Log.error "Crawler: there is an error in pipeline while trying to call " \
+            ".close_crawler method: #{e.class}, #{e.message}"
         end
       end
     end
@@ -138,13 +139,13 @@ module Kimurai
       run_info[:status] = :completed
     rescue => e
       # maybe include backtrace
-      run_info.merge!(status: :failed, error: e)
+      run_info.merge!(status: :failed, error: e.inspect)
       raise e
     ensure
       # handle ctrl-c/SIGTERM case, where $! will have an exeption, but rescue
       # block above wasn't been executed so the status is still :running
-      if !failed? && error = $!
-        run_info.merge!(status: :failed, error: error)
+      if !failed? && e = $!
+        run_info.merge!(status: :failed, error: e.inspect)
       end
 
       stop_time  = Time.now
@@ -178,13 +179,12 @@ module Kimurai
       # todo: add post request option for mechanize
       request_data = { url: url, data: data }
 
-      page.visit(url)
-      # change to public send
-      send(handler, request_data)
+      browser.visit(url)
+      public_send(handler, request_data)
     end
 
     def console
-      binding.irb
+      Object.const_defined?("Pry") ? binding.pry : binding.irb
     end
 
     private
@@ -193,12 +193,12 @@ module Kimurai
       Log.instance
     end
 
-    def page
-      @page ||= SessionBuilder.new(@driver, options: @options).build
+    def browser
+      @browser ||= SessionBuilder.new(@driver, options: @options).build
     end
 
     def response
-      page.response
+      browser.response
     end
 
     def pipeline_item(item)
@@ -222,7 +222,8 @@ module Kimurai
     ###
 
     def absolute_url(url, base:)
-      URI.join(base, url).to_s
+      return unless url
+      URI.join(base, URI.escape(url)).to_s
     end
 
     ###
@@ -243,7 +244,7 @@ module Kimurai
           crawler = self.class.new(driver: driver, options: driver_options)
 
           part.each do |request_data|
-            crawler.send(:request_to, handler, request_data)
+            crawler.public_send(:request_to, handler, request_data)
           end
         end
         # add delay between starting threads

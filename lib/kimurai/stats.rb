@@ -11,6 +11,7 @@ module Kimurai
       string :status
       datetime :start_time, empty: false
       datetime :stop_time
+      string :environment
       integer :concurrent_jobs
       text :crawlers
       text :error
@@ -91,6 +92,42 @@ module Kimurai
         def session_id(id)
           filter(session_id: id)
         end
+      end
+
+      def latest?
+        Run.where(crawler_name: crawler_name).last == self
+      end
+
+      def difference_between_previous_run
+        previous_run = Run.where(crawler_name: crawler_name).reverse_order(:id).first(Sequel[:id] < id)
+        return unless previous_run
+
+        {
+          visits: {
+            requests: {
+              current: visits["requests"],
+              previous: previous_run.visits["requests"],
+              difference: calculate_difference(visits["requests"], previous_run.visits["requests"])
+            },
+            responses: {
+              current: visits["responses"],
+              previous: previous_run.visits["responses"],
+              difference: calculate_difference(visits["responses"], previous_run.visits["responses"])
+            }
+          },
+          items: {
+            processed: calculate_difference(items["processed"], previous_run.items["processed"]),
+            saved: calculate_difference(items["saved"], previous_run.items["saved"])
+          },
+          previous_run_id: previous_run.id
+        }
+      end
+
+      private
+
+      def calculate_difference(current, previous)
+        return if current == 0 || previous == 0
+        (((current - previous).to_r / previous) * 100).to_f.round(1)
       end
     end
 

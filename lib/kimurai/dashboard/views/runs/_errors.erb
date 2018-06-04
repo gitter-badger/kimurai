@@ -1,0 +1,16 @@
+<table class="table table-hover table-sm">
+  <thead>
+    <tr>
+      <th scope="col">Error</th>
+      <th scope="col">Count</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% errors.each do |error, count| %>
+      <tr>
+        <td><%= error %></td>
+        <td><%= count %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

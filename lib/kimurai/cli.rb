@@ -2,9 +2,58 @@ require 'thor'
 
 module Kimurai
   class CLI < Thor
+    # ToDo refactor genetator part to extract into separate class
+    include Thor::Actions
+
+    def self.source_root
+      File.dirname(__FILE__)
+    end
+
+    desc "new", "Create new crawler project"
+    def new(project_name)
+      directory "template", project_name
+      inside(project_name) do
+        run "bundle install"
+      end
+
+      puts "New kimurai project has been successfully created!"
+    end
+
+    desc "generate_crawler", "Generate new crawler in project directory"
+    option :start_url, type: :string, banner: "Start url for a new crawler crawler"
+    def generate(generator_type, *args)
+      if generator_type == "crawler"
+        crawler_name = args.shift
+        crawler_path = "crawlers/#{crawler_name}.rb"
+        raise "Crawler #{crawler_path} already exists" if File.exists? crawler_path
+
+        create_file crawler_path do
+          <<~RUBY
+            class #{to_crawler_class(crawler_name)} < ApplicationCrawler
+              @name = "#{crawler_name}"
+              @default_options = {}
+
+              def parse(url:, data: {})
+              end
+            end
+          RUBY
+        end
+
+        if start_url = options["start_url"]
+          insert_into_file(crawler_path, after: %Q{@name = "#{crawler_name}"\n}) do
+            %Q{  @start_url = "#{start_url}"\n}
+          end
+        end
+      else
+        raise "Don't know this generator"
+      end
+    end
+
+    ###
+
     desc "start", "Starts the crawler by crawler name"
     def start(crawler_name)
-      require './config/application'
+      require './config/boot'
 
       crawler_class = find_crawler(crawler_name)
       crawler_class.start
@@ -12,14 +61,12 @@ module Kimurai
 
     desc "list", "Lists all crawlers in the project"
     def list
-      require './config/crawlers_boot'
+      require './config/boot'
 
       Base.descendants.each do |crawler_class|
         puts crawler_class.name if crawler_class.name
       end
     end
-
-    ###
 
     desc "runner", "Starts all crawlers in the project in queue"
     option :jobs, aliases: :j, type: :numeric, default: 1, banner: "The number of concurrent jobs"
@@ -27,33 +74,46 @@ module Kimurai
       jobs = options["jobs"]
       raise "Jobs count can't be 0" if jobs == 0
 
-      require './config/application'
+      require './config/boot'
       Runner.new(parallel_jobs: jobs).run!
+    end
+
+    desc "console", "Start console mode for a specific crawler"
+    option :driver, aliases: :d, type: :string, banner: "Driver to default session"
+    def console(crawler_name = nil)
+      # if nil, will be called application crawler
+      require './config/boot'
+
+      crawler_class = find_crawler(crawler_name)
+      crawler_class.preload!
+
+      if driver = options["driver"]&.to_sym
+        crawler_class.new(driver: driver).console
+      else
+        crawler_class.new.console
+      end
     end
 
     # In config there should be enabled stats and database uri
     desc "dashboard", "Show full report stats about runs and sessions"
     def dashboard
-      require './config/application'
+      require './config/boot'
       require 'kimurai/dashboard/app'
 
       Kimurai::Dashboard::App.run!
-    end
-
-    desc "console", "Start console mode for a specific crawler"
-    def console(crawler_name)
-      require './config/application'
-
-      crawler_class = find_crawler(crawler_name)
-      crawler_class.preload!
-
-      crawler_class.new.console
     end
 
     private
 
     def find_crawler(crawler_name)
       Base.descendants.find { |crawler_class| crawler_class.name == crawler_name }
+    end
+
+    def to_crawler_class(string)
+      string.sub(/^./) { $&.capitalize }
+        .gsub(/(?:_|(\/))([a-z\d]*)/) { "#{$1}#{$2.capitalize}" }
+        .gsub(/(?:-|(\/))([a-z\d]*)/) { "Dash#{$2.capitalize}" }
+        .gsub(/(?:\.|(\/))([a-z\d]*)/) { "#{$1}#{$2.capitalize}" }
     end
   end
 end

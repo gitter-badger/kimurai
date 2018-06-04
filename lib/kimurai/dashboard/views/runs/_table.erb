@@ -25,7 +25,7 @@
           <td><%= get_badge(run.status) %></td>
           <td><%= run.start_time %></td>
           <td><%= run.stop_time %></td>
-          <td><%= run.running_time %></td>
+          <td><%= run.running_time.duration %></td>
           <td>
             <a href="/sessions/<%= run.session_id %>"><%= run.session_id %></a>
           </td>

@@ -29,15 +29,15 @@ module Kimurai
       def get_badge(status)
         case status
         when "running"
-          %{<span class="badge badge-primary">running</span>}
+          %Q{<span class="badge badge-primary">running</span>}
         when "processing"
-          %{<span class="badge badge-primary">processing</span>}
+          %Q{<span class="badge badge-primary">processing</span>}
         when "completed"
-          %{<span class="badge badge-success">completed</span>}
+          %Q{<span class="badge badge-success">completed</span>}
         when "failed"
-          %{<span class="badge badge-danger">failed</span>}
+          %Q{<span class="badge badge-danger">failed</span>}
         when "stopped"
-          %{<span class="badge badge-light">stopped</span>}
+          %Q{<span class="badge badge-light">stopped</span>}
         else
           status
         end
@@ -45,7 +45,24 @@ module Kimurai
 
       def render_filters(filters)
         f = filters.map { |k,v| "#{k} = #{v}" }.join(", ")
-        %{<p class="text-muted"> Filters: #{f} </p>}
+        %Q{<p class="text-muted"> Filters: #{f} </p>}
+      end
+
+      def format_difference(prev_value, prev_diff, prev_run_id)
+        previous =
+          %Q{previous <a href="/runs/#{prev_run_id}">#{prev_value}</a>}
+
+        formatted_diff = begin
+          str = prev_diff.to_s
+          str.insert(0, "+") if str !~ /^[-0]/i
+          "#{str}%"
+        end if prev_diff
+
+        if formatted_diff
+          "(#{previous}, #{formatted_diff})"
+        else
+          "(#{previous})"
+        end
       end
     end
   end

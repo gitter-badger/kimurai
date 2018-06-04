@@ -1,0 +1,13 @@
+source 'https://rubygems.org'
+git_source(:github) { |repo| "https://github.com/#{repo}.git" }
+ruby '2.5.0'
+
+gem 'kimurai', path: "/home/bob/code/kimu_app/kimurai"
+
+group :development do
+  gem 'byebug', platforms: [:mri, :mingw, :x64_mingw]
+  gem 'pry'
+end
+
+# require files in directory and child directories recursively
+gem 'require_all'

@@ -168,8 +168,6 @@ module Kimurai
 
     ###
 
-    # attr_reader
-
     def initialize(driver: self.class.driver, options: {})
       @driver = driver
       @options = self.class.default_options.deep_merge(options)
@@ -198,10 +196,6 @@ module Kimurai
     def logger
       Log.instance
     end
-
-    # def response
-    #   browser.response
-    # end
 
     def pipeline_item(item)
       self.class.run_info[:items][:processed] += 1

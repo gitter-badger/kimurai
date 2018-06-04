@@ -11,11 +11,18 @@ module Capybara
       @driver ||= create_session_driver
     end
 
-    def recreate_driver!
-      @driver.quit # check for mechanize
-      @driver, @driver_type, @driver_pid, @driver_port = nil
-      logger.info "Session: current driver has been quitted"
+    def destroy_driver!
+      if @driver.respond_to?(:quit)
+        @driver.quit
+        logger.debug "Session: closed driver's browser: #{mode}"
+      end
 
+      @driver, @driver_type, @driver_pid, @driver_port = nil
+      logger.info "Session: current driver has been destroyed"
+    end
+
+    def recreate_driver!
+      destroy_driver!
       @driver = create_session_driver
     end
 

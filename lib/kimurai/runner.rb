@@ -62,6 +62,9 @@ module Kimurai
       end
 
       crawlers.peach_with_index(jobs) do |crawler_class, i|
+        # ToDo: add Thread.current.abort_on_exception = true and check if
+        # it works, and we don't need `Thread.list.each { |t| t.kill if t != Thread.main }` (see above)
+
         crawler_name = crawler_class.name
 
         puts "> Runner: started crawler: #{crawler_name}, index: #{i}"

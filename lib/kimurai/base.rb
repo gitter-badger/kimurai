@@ -168,6 +168,8 @@ module Kimurai
 
     ###
 
+    # attr_reader
+
     def initialize(driver: self.class.driver, options: {})
       @driver = driver
       @options = self.class.default_options.deep_merge(options)
@@ -187,14 +189,14 @@ module Kimurai
       Object.const_defined?("Pry") ? binding.pry : binding.irb
     end
 
+    def browser
+      @browser ||= SessionBuilder.new(@driver, options: @options).build
+    end
+
     private
 
     def logger
       Log.instance
-    end
-
-    def browser
-      @browser ||= SessionBuilder.new(@driver, options: @options).build
     end
 
     # def response
@@ -241,15 +243,18 @@ module Kimurai
 
       parts.each do |part|
         threads << Thread.new(part) do |part|
-          crawler = self.class.new(driver: driver, options: driver_options)
+          # stop crawler's process if there is an exeption in any thread
+          Thread.current.abort_on_exception = true
 
+          crawler = self.class.new(driver: driver, options: driver_options)
           part.each do |request_data|
-            crawler.public_send(:request_to, handler, request_data)
+            crawler.request_to(handler, request_data)
           end
 
-          # quit after all is done
-          # crawler.
+        ensure
+          crawler.browser.destroy_driver!
         end
+
         # add delay between starting threads
         sleep 0.5
       end

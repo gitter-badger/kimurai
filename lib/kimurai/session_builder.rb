@@ -7,6 +7,7 @@ require_relative 'session_builder/ssl'
 require_relative 'session_builder/window_size'
 
 # add accept language option for selenium
+# ToDo: add #next method to user_agents and proxies in additional to #sample
 
 module Kimurai
   class SessionBuilder
@@ -128,6 +129,7 @@ module Kimurai
       check_before_request_clear_cookies
       check_before_request_set_random_user_agent_for_mechanize_poltergeist
       check_before_request_set_delay
+
       @session
     end
 
@@ -236,7 +238,7 @@ module Kimurai
     end
 
     def check_headless_mode_for_selenium
-      if (ENV["HEADLESS"] != "false" || ENV["KIMURAI_ENV"] == "production") && driver_type == :selenium
+      if ENV["HEADLESS"] != "false" && driver_type == :selenium
         if @conf[:headless_mode] == :virtual_display
           # https://www.rubydoc.info/gems/headless
           # It's enough to add one virtual display instance for all capybara instances

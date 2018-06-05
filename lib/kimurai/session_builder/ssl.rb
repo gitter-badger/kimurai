@@ -17,6 +17,7 @@ module Kimurai
         when :selenium_firefox
           # not sure, looks like there needs to be a different setting but don't know
           # how to set acceptInsecureCerts. Todo.
+          # https://stackoverflow.com/a/12177815
           @driver_options.profile.secure_ssl = false
           @driver_options.profile.assume_untrusted_certificate_issuer = false
 

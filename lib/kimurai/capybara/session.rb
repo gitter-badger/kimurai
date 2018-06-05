@@ -146,17 +146,7 @@ module Capybara
     end
 
     def current_response
-      # current_hash = ::MurmurHash3::V32.str_hash(body)
-      # if current_hash != @page_hash || @response.nil?
-      #   # logger.debug "Session: Getting new response..."
-
-      #   @page_hash = current_hash
-      # @current_response = Nokogiri::HTML(body)
       Nokogiri::HTML(body)
-      # else
-      #   # logger.debug "Session: Hash is the same, use current one response."
-      #   @response
-      # end
     end
 
     def resize_to(width, height)

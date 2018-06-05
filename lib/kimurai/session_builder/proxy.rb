@@ -25,6 +25,7 @@ module Kimurai
               @driver_options.profile["network.proxy.socks"] = ip
               @driver_options.profile["network.proxy.socks_port"] = port.to_i
               @driver_options.profile["network.proxy.socks_version"] = 5
+              @driver_options.profile["network.proxy.socks_remote_dns"] = true
             end
 
             Log.debug "Session builder: enabled proxy for selenium_firefox (type #{type}, ip #{ip}, port #{port})"

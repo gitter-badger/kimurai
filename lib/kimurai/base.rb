@@ -22,7 +22,7 @@ module Kimurai
         items: {
           processed: 0,
           saved: 0,
-          drop_errors: {}
+          drop_errors: Hash.new(0)
         },
         error: nil,
         server: {
@@ -168,6 +168,15 @@ module Kimurai
 
     ###
 
+    def self.extract_proxies(file)
+      File.readlines(file).map do |proxy_string|
+        ip, port, type, user, password = proxy_string.strip.split(":")
+        { ip: ip, port: port, type: type, user: user, password: password }
+      end
+    end
+
+    ###
+
     def initialize(driver: self.class.driver, options: {})
       @driver = driver
       @options = self.class.default_options.deep_merge(options)
@@ -197,7 +206,7 @@ module Kimurai
       Log.instance
     end
 
-    def pipeline_item(item)
+    def pipeline(item)
       self.class.run_info[:items][:processed] += 1
 
       @pipelines.each do |pipeline|
@@ -208,7 +217,7 @@ module Kimurai
       Log.info "Pipeline: saved item: #{item.to_json}"
     rescue => e
       error = e.inspect
-      self.class.run_info[:items][:drop_errors][error] ||= 0
+      # self.class.run_info[:items][:drop_errors][error] ||= 0
       self.class.run_info[:items][:drop_errors][error] += 1
       Log.error "Pipeline: dropped item: #{error}: #{item}"
     ensure
@@ -235,25 +244,28 @@ module Kimurai
       parts = requests.in_groups(size, false)
       threads = []
 
+      start_time = Time.now
+      Log.debug "Crawler: in_parallel: starting processing #{requests.size} requests within #{size} threads"
+
       parts.each do |part|
         threads << Thread.new(part) do |part|
           # stop crawler's process if there is an exeption in any thread
-          Thread.current.abort_on_exception = true
+          # Thread.current.abort_on_exception = true
 
           crawler = self.class.new(driver: driver, options: driver_options)
           part.each do |request_data|
             crawler.request_to(handler, request_data)
           end
-
         ensure
           crawler.browser.destroy_driver!
         end
 
-        # add delay between starting threads
-        sleep 0.5
+        sleep 0.5 # add delay between starting threads
       end
 
       threads.each(&:join)
+      Log.debug "Crawler: in_parallel: stopped processing #{requests.size} " \
+        "requests within #{size} threads (total time: #{Time.now - start_time})"
     end
   end
 end

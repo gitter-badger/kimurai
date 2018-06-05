@@ -30,7 +30,7 @@ module Capybara
       @stats ||= Concurrent::Hash.new.merge({
         requests: 0,
         responses: 0,
-        requests_errors: {}
+        requests_errors: Hash.new(0)
       })
     end
 
@@ -56,21 +56,38 @@ module Capybara
     # ToDo: maybe merge #post_request to this method. Something like
     # visit(visit_url, method: :get, delay:)
     alias_method :original_visit, :visit
-    def visit(visit_uri, delay: options[:before_request_delay])
+    def visit(visit_uri, delay: options[:before_request_delay], max_retries: 3)
       process_delay(delay) if delay
       check_request_options
 
-      self.class.stats[:requests] += 1
-      stats[:requests] += 1
-      logger.info "Session: started get request to: #{visit_uri}"
+      begin
+        retries ||= 0
+        sleep_interval ||= 5
 
-      original_visit(visit_uri)
+        self.class.stats[:requests] += 1
+        stats[:requests] += 1
+        logger.info "Session: started get request to: #{visit_uri}"
 
-      self.class.stats[:responses] += 1
-      stats[:responses] += 1
-      logger.info "Session: finished get request to: #{visit_uri}"
-    rescue => e
-      raise e
+        original_visit(visit_uri)
+      rescue Net::ReadTimeout => e
+        error = e.inspect
+        # self.class.stats[:requests_errors][error] ||= 0
+        self.class.stats[:requests_errors][error] += 1
+        logger.error "Session: request visit error: #{error} (url: #{visit_uri})"
+
+        if (retries += 1) < max_retries
+          logger.info "Session: sleep #{(sleep_interval += 5)} seconds and process " \
+            "another retry (#{retries}) to the  url #{visit_uri}"
+          sleep(sleep_interval) and retry
+        else
+          logger.error "Session: All retries (#{retries}) to the url #{visit_uri} is gone, no luck"
+          raise e
+        end
+      else
+        self.class.stats[:responses] += 1
+        stats[:responses] += 1
+        logger.info "Session: finished get request to: #{visit_uri}"
+      end
     ensure
       print_stats
     end

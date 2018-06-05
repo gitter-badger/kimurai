@@ -28,13 +28,13 @@ module Kimurai
               @driver_options.profile["network.proxy.socks_remote_dns"] = true
             end
 
-            Log.debug "Session builder: enabled proxy for selenium_firefox (type #{type}, ip #{ip}, port #{port})"
+            Log.debug "Session builder: enabled proxy for selenium_firefox (type: #{type}, ip: #{ip}, port: #{port})"
           when :selenium_chrome
             # remember, you still trackable because of webrtc enabled https://ipleak.net/
             # and in chrome there is no easy way to disable it.
             # you can run chrome with a custom preconfigured profile with a special extention https://stackoverflow.com/a/44602360
             @driver_options.args << "--proxy-server=#{type}://#{ip}:#{port}"
-            Log.debug "Session builder: enabled proxy for selenium_chrome (type #{type}, ip #{ip}, port #{port})"
+            Log.debug "Session builder: enabled proxy for selenium_chrome (type: #{type}, ip: #{ip}, port: #{port})"
           end
         else
           Log.warn "Session builder: selenium don't allow proxy with authentication, skipped"

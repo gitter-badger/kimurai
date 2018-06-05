@@ -3,7 +3,7 @@ class Validator < Kimurai::Pipeline
     # puts "From validator, open crawler"
   end
 
-  def process_item(item)
+  def process_item(item, options: {})
 
     item
   end

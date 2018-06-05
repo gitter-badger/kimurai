@@ -2,7 +2,7 @@ class Modificator < Kimurai::Pipeline
   def self.open_crawler
   end
 
-  def process_item(item)
+  def process_item(item, options: {})
 
     item
   end

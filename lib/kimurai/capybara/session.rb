@@ -13,6 +13,8 @@ require_relative 'session/proxy'
 
 module Capybara
   class Session
+    RETRY_REQUEST_ERRORS = [Net::ReadTimeout].freeze
+
     class << self
       attr_accessor :logger
     end
@@ -58,25 +60,25 @@ module Capybara
     alias_method :original_visit, :visit
     def visit(visit_uri, delay: options[:before_request_delay], max_retries: 3)
       process_delay(delay) if delay
-      check_request_options
 
       begin
         retries ||= 0
-        sleep_interval ||= 5
+        sleep_interval ||= 0
+
+        check_request_options
 
         self.class.stats[:requests] += 1
         stats[:requests] += 1
         logger.info "Session: started get request to: #{visit_uri}"
 
         original_visit(visit_uri)
-      rescue Net::ReadTimeout => e
+      rescue *RETRY_REQUEST_ERRORS => e
         error = e.inspect
-        # self.class.stats[:requests_errors][error] ||= 0
         self.class.stats[:requests_errors][error] += 1
         logger.error "Session: request visit error: #{error} (url: #{visit_uri})"
 
         if (retries += 1) < max_retries
-          logger.info "Session: sleep #{(sleep_interval += 5)} seconds and process " \
+          logger.info "Session: sleep #{(sleep_interval += 10)} seconds and process " \
             "another retry (#{retries}) to the  url #{visit_uri}"
           sleep(sleep_interval) and retry
         else

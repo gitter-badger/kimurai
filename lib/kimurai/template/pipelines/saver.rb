@@ -1,7 +1,7 @@
 class Saver < Kimurai::Pipeline
   class DropItemError < StandardError; end
 
-  def process_item(item)
+  def process_item(item, options: {})
 
     item
   end

@@ -206,18 +206,22 @@ module Kimurai
       Log.instance
     end
 
-    def pipeline(item)
+    def pipeline(item, options: {})
       self.class.run_info[:items][:processed] += 1
 
       @pipelines.each do |pipeline|
-        item = pipeline.process_item(item)
+        item =
+          if pipeline_options = options[pipeline.class.name]
+            pipeline.process_item(item, options: pipeline_options)
+          else
+            pipeline.process_item(item)
+          end
       end
 
       self.class.run_info[:items][:saved] += 1
       Log.info "Pipeline: saved item: #{item.to_json}"
     rescue => e
       error = e.inspect
-      # self.class.run_info[:items][:drop_errors][error] ||= 0
       self.class.run_info[:items][:drop_errors][error] += 1
       Log.error "Pipeline: dropped item: #{error}: #{item}"
     ensure

@@ -19,7 +19,7 @@ class ApplicationCrawler < Kimurai::Base
   # Pipelines list, by order.
   # Default pipelines for all crawlers inherited from ApplicationCrawler.
   # Set different order in the custom crawler if you need it to.
-  @pipelines = [:modificator, :validator, :saver]
+  @pipelines = [:validator, :converter, :saver]
 
   # default options for a default drivers.
   # Set default options here in ApplicationCrawler as a base default_options
@@ -106,7 +106,7 @@ class ApplicationCrawler < Kimurai::Base
         # Note: you can set cusom delay for a custom request within `#request_to` method,
         # example: `request_to(:parse_listing, url: url, delay: 3..6)`,
         # or even directly while calling `session_instance#visit`, example: `browser.visit(url, delay: 3)`
-        delay: 0,
+        # delay: 3..6,
       }
     },
     custom_options_for_driver: {

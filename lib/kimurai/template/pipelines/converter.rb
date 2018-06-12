@@ -1,4 +1,4 @@
-class Modificator < Kimurai::Pipeline
+class Converter < Kimurai::Pipeline
   def self.open_crawler
   end
 

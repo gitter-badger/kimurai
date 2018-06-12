@@ -26,7 +26,8 @@ module Kimurai
         },
         error: nil,
         server: {
-          ip: Socket.ip_address_list.find { |ai| ai.ipv4? && !ai.ipv4_loopback? }.ip_address,
+          hostname: Socket.gethostname,
+          ipv4: Socket.ip_address_list.find { |ai| ai.ipv4? && !ai.ipv4_loopback? }.ip_address,
           process_pid: Process.pid
         }
       })
@@ -82,8 +83,8 @@ module Kimurai
       # Ensure to update run status the last time at process exit (handle ctr-c as well)
       at_exit { callback.call }
 
-      # update run status in database every 2 seconds
-      Concurrent::TimerTask.new(execution_interval: 2, timeout_interval: 5) { callback.call }.execute
+      # update run status in database every 3 seconds
+      Concurrent::TimerTask.new(execution_interval: 3, timeout_interval: 5) { callback.call }.execute
     end
 
     ###
@@ -138,7 +139,6 @@ module Kimurai
 
       run_info[:status] = :completed
     rescue => e
-      # maybe include backtrace
       run_info.merge!(status: :failed, error: e.inspect)
       raise e
     ensure
@@ -189,7 +189,7 @@ module Kimurai
       request_data = { url: url, data: data }
 
       delay ? browser.visit(url, delay: delay) : browser.visit(url)
-      public_send(handler, request_data.merge(doc: browser.current_response))
+      public_send(handler, browser.current_response, request_data)
     end
 
     def console
@@ -206,7 +206,8 @@ module Kimurai
       Log.instance
     end
 
-    def pipeline(item, options: {})
+    def pipeline(item, options = {})
+      Log.info "Pipeline: starting processing item (id: #{item[:id]})"
       self.class.run_info[:items][:processed] += 1
 
       @pipelines.each do |pipeline|

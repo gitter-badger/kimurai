@@ -1,6 +1,7 @@
 module Kimurai
   class Pipeline
     class DropItemError < StandardError; end
+
     class << self
       attr_accessor :crawler
 

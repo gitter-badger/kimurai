@@ -22,7 +22,7 @@ module Kimurai
     desc "generate", "Generator, available types: crawler"
     option :start_url, type: :string, banner: "Start url for a new crawler crawler"
     def generate(generator_type, *args)
-      raise "Can't find a project" unless Dir.exists? "crawlers"
+      check_for_project
 
       if generator_type == "crawler"
         crawler_name = args.shift
@@ -55,6 +55,7 @@ module Kimurai
 
     desc "start", "Starts the crawler by crawler name"
     def start(crawler_name)
+      check_for_project
       require './config/boot'
 
       crawler_class = find_crawler(crawler_name)
@@ -63,6 +64,7 @@ module Kimurai
 
     desc "list", "Lists all crawlers in the project"
     def list
+      check_for_project
       require './config/boot'
 
       Base.descendants.each do |crawler_class|
@@ -73,6 +75,8 @@ module Kimurai
     desc "runner", "Starts all crawlers in the project in queue"
     option :jobs, aliases: :j, type: :numeric, default: 1, banner: "The number of concurrent jobs"
     def runner
+      check_for_project
+
       jobs = options["jobs"]
       raise "Jobs count can't be 0" if jobs == 0
 
@@ -99,6 +103,8 @@ module Kimurai
     # In config there should be enabled stats and database uri
     desc "dashboard", "Show full report stats about runs and sessions"
     def dashboard
+      check_for_project
+
       require './config/boot'
       require 'kimurai/dashboard/app'
 
@@ -106,6 +112,10 @@ module Kimurai
     end
 
     private
+
+    def check_for_project
+      raise "Can't find a project" unless Dir.exists? "crawlers"
+    end
 
     def find_crawler(crawler_name)
       Base.descendants.find { |crawler_class| crawler_class.name == crawler_name }

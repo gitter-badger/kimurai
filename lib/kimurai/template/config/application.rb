@@ -32,6 +32,7 @@ Kimurai.configure do |config|
   # default database is sqlite3
   # config.stats_database = "sqlite://db/crawlers_runs_#{Kimurai.env}.sqlite3"
 
-  # enable colorizer (works only for default logger in development mode)
-  config.colorize_logger = true
+  # By default, colored logger enabled in development mode. If you would like
+  # to disable it, set setting to false
+  # config.colorize_logger = false
 end

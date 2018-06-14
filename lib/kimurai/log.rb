@@ -11,7 +11,9 @@ module Kimurai
         output = "%s, [%s#%d] [%s: %s] %5s -- %s: %s\n"
           .freeze % [severity[0..0], datetime, $$, thread_type, current_thread_id, severity, progname, msg]
 
-        if Kimurai.configuration.colorize_logger && Kimurai.env == "development"
+        if Kimurai.configuration.colorize_logger != false && Kimurai.env == "development"
+          # TODO: Fix colorizer to class method. Don't need to create
+          # too much objects
           colorizer = Rbcat::Colorizer.new(predefined: [:jsonhash, :logger])
           colorizer.colorize(output)
         else

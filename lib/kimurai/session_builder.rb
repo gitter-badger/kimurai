@@ -60,16 +60,16 @@ module Kimurai
 
 
       @conf[:session_options][:recreate][:if_memory_more_than] =
-        options[:session_options][:recreate][:if_memory_more_than].presence
+        options.dig(:session_options, :recreate, :if_memory_more_than).presence
 
       @conf[:session_options][:before_request][:clear_cookies] =
-        options[:session_options][:before_request][:clear_cookies].presence
+        options.dig(:session_options, :before_request, :clear_cookies).presence
 
       @conf[:session_options][:before_request][:set_random_user_agent] =
-        options[:session_options][:before_request][:set_random_user_agent].presence
+        options.dig(:session_options, :before_request, :set_random_user_agent).presence
 
       @conf[:session_options][:before_request][:delay] =
-        options[:session_options][:before_request][:delay].presence
+        options.dig(:session_options, :before_request, :delay).presence
     end
 
     def build

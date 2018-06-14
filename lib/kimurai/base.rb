@@ -225,6 +225,7 @@ module Kimurai
       error = e.inspect
       self.class.run_info[:items][:drop_errors][error] += 1
       Log.error "Pipeline: dropped item: #{error}: #{item}"
+      Log.error "Pipeline: full error: #{e.full_message}"
     ensure
       Log.info "Stats items: processed: #{self.class.run_info[:items][:processed]}, saved: #{self.class.run_info[:items][:saved]}"
     end
@@ -235,6 +236,11 @@ module Kimurai
       return unless url
       URI.join(base, URI.escape(url)).to_s
     end
+
+    # def new_item(data = {})
+    #   item = Hash.new { |h, k| h[k] = Hash.new(&h.default_proc) }
+    #   item.merge(data)
+    # end
 
     ###
 

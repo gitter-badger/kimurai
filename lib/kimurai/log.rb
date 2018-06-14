@@ -27,7 +27,7 @@ module Kimurai
         @instance ||= (Kimurai.configuration.logger || create_default_logger)
       end
 
-      private_class_method def create_default_logger
+      def create_default_logger
         STDOUT.sync = true
 
         level = "Logger::#{ENV.fetch('LOGGER_LEVEL', 'DEBUG')}".constantize

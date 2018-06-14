@@ -35,7 +35,7 @@ module Kimurai
               @name = "#{crawler_name}"
               @default_options = {}
 
-              def parse(doc, url:, data: {})
+              def parse(response, url:, data: {})
               end
             end
           RUBY

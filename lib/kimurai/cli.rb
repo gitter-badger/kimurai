@@ -59,7 +59,7 @@ module Kimurai
       require './config/boot'
 
       crawler_class = find_crawler(crawler_name)
-      crawler_class.start
+      crawler_class.start!
     end
 
     desc "list", "Lists all crawlers in the project"
@@ -81,12 +81,15 @@ module Kimurai
       raise "Jobs count can't be 0" if jobs == 0
 
       require './config/boot'
+      require 'kimurai/runner'
       Runner.new(parallel_jobs: jobs).run!
     end
 
     desc "console", "Start console mode for a specific crawler"
     option :driver, aliases: :d, type: :string, banner: "Driver to default session"
     def console(crawler_name = nil)
+      check_for_project
+
       # if nil, will be called application crawler
       require './config/boot'
 

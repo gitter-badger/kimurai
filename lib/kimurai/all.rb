@@ -1,4 +1,4 @@
-# except stats.rb, dashboard
+# except stats.rb, dashboard, and runner
 
 require 'active_support'
 require 'active_support/core_ext'
@@ -14,4 +14,3 @@ require_relative 'log'
 require_relative 'session_builder'
 require_relative 'pipeline'
 require_relative 'base'
-require_relative 'runner'

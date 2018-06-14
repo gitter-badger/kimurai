@@ -125,7 +125,7 @@ module Kimurai
       end
     end
 
-    def self.start
+    def self.start!
       preload!
 
       crawler_instance = self.new

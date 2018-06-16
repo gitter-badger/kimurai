@@ -166,6 +166,7 @@ module Kimurai
         @driver_options.profile = Selenium::WebDriver::Firefox::Profile.new
         # default to open all in tabs, not windows (UPD didn't work)
         @driver_options.profile["browser.link.open_newwindow"] = 3
+        @driver_options.profile["media.peerconnection.enabled"] = false # disable web rtc
       when :selenium_chrome
         default_args = %w[--disable-gpu --no-sandbox --disable-translate]
         @driver_options = Selenium::WebDriver::Chrome::Options.new(args: default_args)

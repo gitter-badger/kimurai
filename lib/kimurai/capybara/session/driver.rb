@@ -22,8 +22,13 @@ module Capybara
     end
 
     def recreate_driver!
-      destroy_driver!
-      @driver = create_session_driver
+      if driver_type == :poltergeist
+        @driver.browser.restart
+        @driver_pid, @driver_port = get_driver_pid_port(@driver)
+      else
+        destroy_driver!
+        @driver = create_session_driver
+      end
     end
 
     private

@@ -70,6 +70,11 @@ module Kimurai
 
       @conf[:session_options][:before_request][:delay] =
         options.dig(:session_options, :before_request, :delay).presence
+
+      # phantomjs options
+      @conf[:custom_options_for_driver][:poltergeist_phantomjs] =
+        options.dig(:custom_options_for_driver, :poltergeist_phantomjs).presence
+      # binding.pry
     end
 
     def build
@@ -102,6 +107,8 @@ module Kimurai
         # other
         check_headless_mode_for_selenium
         check_disable_images_for_selenium_poltergeist
+        # added phantomJS options
+        check_phantomjs_custom_options
 
         create_driver(app)
       end
@@ -292,6 +299,15 @@ module Kimurai
       if delay = @conf[:session_options][:before_request][:delay]
         @session.options[:before_request_delay] = delay
         Log.debug "Session builder: enabled before_request_delay for #{driver_name} session"
+      end
+    end
+
+    def check_phantomjs_custom_options
+      # https://github.com/teampoltergeist/poltergeist#customization
+      if options = @conf[:custom_options_for_driver][:poltergeist_phantomjs]
+        options.each do |key, value|
+          @driver_options[key] = value
+        end if driver_type == :poltergeist
       end
     end
   end

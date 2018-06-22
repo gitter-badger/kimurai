@@ -168,6 +168,7 @@ module Kimurai
 
     ###
 
+    ### Fix proxies to simple string, and refactor to ->
     def self.extract_proxies(file)
       File.readlines(file).map do |proxy_string|
         ip, port, type, user, password = proxy_string.strip.split(":")
@@ -206,8 +207,8 @@ module Kimurai
       Log.instance
     end
 
-    def pipeline(item, options = {})
-      Log.info "Pipeline: starting processing item (id: #{item[:id]})"
+    def send_item(item, options = {})
+      Log.debug "Pipeline: starting processing item..."
       self.class.run_info[:items][:processed] += 1
 
       @pipelines.each do |pipeline|
@@ -220,14 +221,14 @@ module Kimurai
       end
 
       self.class.run_info[:items][:saved] += 1
-      Log.info "Pipeline: saved item: #{item.to_json}"
+      Log.info "Pipeline: processed item: #{JSON.generate(item)}"
     rescue => e
       error = e.inspect
       self.class.run_info[:items][:drop_errors][error] += 1
       Log.error "Pipeline: dropped item: #{error}: #{item}"
       Log.error "Pipeline: full error: #{e.full_message}"
     ensure
-      Log.info "Stats items: processed: #{self.class.run_info[:items][:processed]}, saved: #{self.class.run_info[:items][:saved]}"
+      Log.info "Stats items: sent: #{self.class.run_info[:items][:processed]}, processed: #{self.class.run_info[:items][:saved]}"
     end
 
     ###

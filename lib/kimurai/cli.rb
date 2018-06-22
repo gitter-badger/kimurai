@@ -62,6 +62,20 @@ module Kimurai
       crawler_class.start!
     end
 
+    # https://doc.scrapy.org/en/latest/topics/commands.html#parse
+    desc "parse", "Process given url in the specific callback"
+    option :url, aliases: :j, type: :string, required: true, banner: "Url to pass to the callback"
+    def parse(crawler_name, callback)
+      check_for_project
+      require './config/boot'
+
+      crawler_class = find_crawler(crawler_name)
+      crawler_class.preload!
+
+      crawler_instance = crawler_class.new
+      crawler_instance.request_to(callback, url: options["url"])
+    end
+
     desc "list", "Lists all crawlers in the project"
     def list
       check_for_project

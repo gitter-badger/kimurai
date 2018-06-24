@@ -51,11 +51,10 @@ module Kimurai
 
     @driver = :mechanize
     @pipelines = []
-    @default_options = {}
+    @config = {}
 
-    def self.default_options
-      superclass.equal?(::Object) ? @default_options :
-        superclass.default_options.deep_merge(@default_options || {})
+    def self.config
+      superclass.equal?(::Object) ? @config : superclass.config.deep_merge(@config || {})
     end
 
     def self.pipelines
@@ -180,9 +179,9 @@ module Kimurai
 
     ###
 
-    def initialize(driver: self.class.driver, options: {})
+    def initialize(driver: self.class.driver, config: {})
       @driver = driver
-      @options = self.class.default_options.deep_merge(options)
+      @config = self.class.config.deep_merge(config)
       @pipelines = self.class.pipelines
         .map { |pipeline| pipeline.to_s.classify.constantize.new }
     end
@@ -200,7 +199,7 @@ module Kimurai
     end
 
     def browser
-      @browser ||= SessionBuilder.new(@driver, options: @options).build
+      @browser ||= SessionBuilder.new(@driver, config: @config).build
     end
 
     private
@@ -240,11 +239,6 @@ module Kimurai
       URI.join(base, URI.escape(url)).to_s
     end
 
-    # def new_item(data = {})
-    #   item = Hash.new { |h, k| h[k] = Hash.new(&h.default_proc) }
-    #   item.merge(data)
-    # end
-
     ###
 
     # http://phrogz.net/programmingruby/tut_threads.html
@@ -254,7 +248,7 @@ module Kimurai
     # to do, add optional post type here too
     # to do, add note about to include driver options, or use a default ones,
     # upd it's already included, see initialize and def page
-    def in_parallel(handler, size, requests:, driver: self.class.driver, driver_options: {})
+    def in_parallel(handler, size, requests:, driver: self.class.driver, config: {})
       parts = requests.in_groups(size, false)
       threads = []
 
@@ -266,7 +260,7 @@ module Kimurai
           # stop crawler's process if there is an exeption in any thread
           # Thread.current.abort_on_exception = true
 
-          crawler = self.class.new(driver: driver, options: driver_options)
+          crawler = self.class.new(driver: driver, config: config)
           part.each do |request_data|
             crawler.request_to(handler, request_data)
           end

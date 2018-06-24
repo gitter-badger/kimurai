@@ -4,12 +4,12 @@ module Kimurai
 
     # driver config methods
     def check_session_proxy_for_selenium
-      if @conf[:session_proxy] && driver_type == :selenium
-        if @conf[:session_proxy][:user].nil? && @conf[:session_proxy][:password].nil?
-          unless ["http", "socks5"].include? @conf[:session_proxy][:type]
-            raise ConfigurationError, "Session builder: Wrong type of proxy #{@conf[:session_proxy][:type]}. Allowed only http and sock5."
+      if @config[:session_proxy] && driver_type == :selenium
+        if @config[:session_proxy][:user].nil? && @config[:session_proxy][:password].nil?
+          unless ["http", "socks5"].include? @config[:session_proxy][:type]
+            raise ConfigurationError, "Session builder: Wrong type of proxy #{@config[:session_proxy][:type]}. Allowed only http and sock5."
           end
-          ip, port, type = @conf[:session_proxy].values
+          ip, port, type = @config[:session_proxy].values
 
           case driver_name
           when :selenium_firefox
@@ -37,34 +37,34 @@ module Kimurai
             Log.debug "Session builder: enabled proxy for selenium_chrome (type: #{type}, ip: #{ip}, port: #{port})"
           end
         else
-          Log.warn "Session builder: selenium don't allow proxy with authentication, skipped"
+          Log.error "Session builder: selenium don't allow proxy with authentication, skipped"
         end
       end
     end
 
     def check_proxy_bypass_list_for_selenium
-      if @conf[:proxy_bypass_list] && driver_type == :selenium
-        if @conf[:session_proxy]
+      if @config[:proxy_bypass_list].present? && driver_type == :selenium
+        if @config[:session_proxy]
           case driver_name
           when :selenium_firefox
-            @driver_options.profile["network.proxy.no_proxies_on"] = @conf[:proxy_bypass_list].join(", ")
+            @driver_options.profile["network.proxy.no_proxies_on"] = @config[:proxy_bypass_list].join(", ")
           when :selenium_chrome
-            @driver_options.args << "--proxy-bypass-list=#{@conf[:proxy_bypass_list].join(";")}"
+            @driver_options.args << "--proxy-bypass-list=#{@config[:proxy_bypass_list].join(";")}"
           end
 
-          Log.debug "Session builder: enabled proxy_bypass_list for #{driver_name}"
+          Log.debug "Session builder: enabled `proxy_bypass_list` for #{driver_name}"
         else
-          Log.warn "Session builder: To set proxy_bypass_list, session_proxy is required, skipped"
+          Log.error "Session builder: To set `proxy_bypass_list`, session_proxy is required, skipped"
         end
       end
     end
 
     # session instance methods
     def check_session_proxy_for_poltergeist_mechanize
-      if @conf[:session_proxy] && [:mechanize, :poltergeist].include?(driver_type)
-        @session.set_proxy(@conf[:session_proxy])
+      if @config[:session_proxy] && [:mechanize, :poltergeist].include?(driver_type)
+        @session.set_proxy(@config[:session_proxy])
 
-        ip, port, type, user, password = @conf[:session_proxy].values
+        ip, port, type, user, password = @config[:session_proxy].values
         Log.debug "Session builder: enabled proxy for #{driver_name} " \
           "(type: #{type}, ip: #{ip}, port: #{port}, user: #{user}, password: #{password})"
       end

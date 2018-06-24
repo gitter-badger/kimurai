@@ -21,11 +21,11 @@ class ApplicationCrawler < Kimurai::Base
   # Set different order in the custom crawler if you need it to.
   @pipelines = [:validator, :converter, :saver]
 
-  # default options for a default drivers.
-  # Set default options here in ApplicationCrawler as a base default_options
+  # default configuraion.
+  # Set config here in ApplicationCrawler as a base config
   # for all of you crawlers. If for some crawler you need tweak these settings,
-  # just write a custom @default_optins there, and it will be deep_merged with it.
-  @default_options = {
+  # just write a custom @config there, and it will be deep_merged with it.
+  @config = {
     # Default headers for a session.
     # Format: hash. Example: { "some header" => "some value", "another header" => "another valye" }
     # works only for :mechanize and :poltergeist_phantomjs drivers (selenium don't allow to set custom headers).
@@ -42,7 +42,7 @@ class ApplicationCrawler < Kimurai::Base
     # Selenium chrome allows to set cookies to any domain, it only needs to have any valid webpage
     # to be visited. For selenium firefox allowed to set cookies only for
     # current visited webpage's domain.
-    selenium_url_for_default_cookies: "",
+    selenium_url_to_set_cookies: "",
     # List of user_agents.
     # Format: array of strings. Example of user agent string: "Some user agent".
     # If provided more than one, user agent will be choosed randomly for each new session.
@@ -86,7 +86,7 @@ class ApplicationCrawler < Kimurai::Base
     # note: define env variable HEADLESS=false to run browser in normal mode (for debug)
     # Option works only for selenium browsers (and virtual_display only for linux environment)
     headless_mode: :native, # virtual_display
-    session_options: {
+    session: {
       recreate: {
         after_requests_count: 80,
         if_memory_more_than: 500_000 # done
@@ -99,7 +99,7 @@ class ApplicationCrawler < Kimurai::Base
         # done # works for all
         clear_cookies: true,
         # works for all # with some restrictions for selenium
-        clear_and_set_default_cookies: true,
+        clear_and_set_cookies: true,
         # Global option to set delay for a browser's session.
         # If present, browser will wait before process `visit` method to a url.
         # Can be integer (5) or range (2..5). If range, delay number will be choosen randomly.
@@ -109,7 +109,7 @@ class ApplicationCrawler < Kimurai::Base
         # delay: 3..6,
       }
     },
-    custom_options_for_driver: {
+    additional_driver_options: {
       # upd add custom extentions for browsers and js injection for phantom
       selenium_firefox: {
         # see all options here http://preferential.mozdev.org/preferences.html

@@ -19,62 +19,28 @@ module Kimurai
 
     attr_reader :driver_name, :driver_type
 
-    def initialize(driver, options: {})
+    def initialize(driver, config: {})
       unless driver.presence
         message = "Provide a driver_name to build a session. You can choose " \
           "from default drivers (#{AVAILABLE_DRIVERS}) or use a custom one (configure it first)."
         raise ConfigurationError, message
       end
 
-      # refactor it just to use options instead of @conf. It's just a duplication
-      @conf = Hash.new { |l, k| l[k] = Hash.new(&l.default_proc) }
-
       @driver_name = driver
       @driver_type = parse_driver_type(driver)
       require_driver!
 
-      @conf[:window_size] = options[:window_size].presence
+      @config = config
 
-      @conf[:session_proxy] = begin
-        list = options[:proxies_list].presence
-        list.sample if list
-      end
-      @conf[:proxy_bypass_list] = options[:proxy_bypass_list].presence
-
-      @conf[:ssl_cert_path] = options[:ssl_cert_path].presence
-      @conf[:ignore_ssl_errors] = options[:ignore_ssl_errors].presence
-
-      @conf[:session_headers] = options[:headers].presence
-      @conf[:user_agents_list] = options[:user_agents_list].presence
-      @conf[:session_user_agent] = begin
-        list = @conf[:user_agents_list]
+      @config[:session_proxy] = begin
+        list = config[:proxies].presence
         list.sample if list
       end
 
-      @conf[:headless_mode] = options[:headless_mode].presence
-
-      @conf[:disable_images] = options[:disable_images].presence
-
-      @conf[:default_cookies] = options[:cookies].presence
-      @conf[:selenium_url_for_default_cookies] = options[:selenium_url_for_default_cookies].presence
-
-
-      @conf[:session_options][:recreate][:if_memory_more_than] =
-        options.dig(:session_options, :recreate, :if_memory_more_than).presence
-
-      @conf[:session_options][:before_request][:clear_cookies] =
-        options.dig(:session_options, :before_request, :clear_cookies).presence
-
-      @conf[:session_options][:before_request][:set_random_user_agent] =
-        options.dig(:session_options, :before_request, :set_random_user_agent).presence
-
-      @conf[:session_options][:before_request][:delay] =
-        options.dig(:session_options, :before_request, :delay).presence
-
-      # phantomjs options
-      @conf[:custom_options_for_driver][:poltergeist_phantomjs] =
-        options.dig(:custom_options_for_driver, :poltergeist_phantomjs).presence
-      # binding.pry
+      @config[:session_user_agent] = begin
+        list = config[:user_agents]
+        list.sample if list
+      end
     end
 
     def build
@@ -131,7 +97,7 @@ module Kimurai
       check_session_user_agent_for_poltergeist_mechanize
 
       # other
-      check_default_cookies
+      check_cookies
       check_recreate_if_memory_for_selenium_poltergeist
       check_before_request_clear_cookies
       check_before_request_set_random_user_agent_for_mechanize_poltergeist
@@ -155,10 +121,7 @@ module Kimurai
           # https://www.rubydoc.info/gems/capybara-mechanize/1.5.0
           driver = Capybara::Mechanize::Driver.new("app")
           # refactor, maybe there is a way to set settings as options for mechanize
-          driver.configure do |a|
-            # don't set to zero
-            a.history.max_size = 3
-          end
+          driver.configure { |a| a.history.max_size = 3 }
           driver
         end
 
@@ -214,24 +177,26 @@ module Kimurai
 
     ###
 
-    def check_default_cookies
-      if @conf[:default_cookies]
+    def check_cookies
+      if @config[:cookies].present?
         if driver_type == :selenium
-          error_message = "Please provide a visit url to set default cookies for selenium"
-          raise ConfigurationError, error_message unless @conf[:selenium_url_for_default_cookies]
+          if @config[:selenium_url_to_set_cookies].present?
+            @session.visit(@config[:selenium_url_to_set_cookies])
+          else
+            raise ConfigurationError, "Please provide a visit url to set default cookies for selenium"
+          end
 
-          @session.visit(@conf[:selenium_url_for_default_cookies])
-          @session.set_cookies(@conf[:default_cookies])
+          @session.set_cookies(@config[:cookies])
         else
-          @session.set_cookies(@conf[:default_cookies])
+          @session.set_cookies(@config[:cookies])
         end
 
-        Log.debug "Session builder: enabled default cookies for #{driver_name}"
+        Log.debug "Session builder: enabled custom cookies for #{driver_name}"
       end
     end
 
     def check_disable_images_for_selenium_poltergeist
-      if @conf[:disable_images] && [:selenium, :poltergeist].include?(driver_type)
+      if @config[:disable_images].present? && [:selenium, :poltergeist].include?(driver_type)
         case driver_name
         when :selenium_firefox
           @driver_options.profile["permissions.default.image"] = 2
@@ -247,7 +212,7 @@ module Kimurai
 
     def check_headless_mode_for_selenium
       if ENV["HEADLESS"] != "false" && driver_type == :selenium
-        if @conf[:headless_mode] == :virtual_display
+        if @config[:headless_mode] == :virtual_display
           # https://www.rubydoc.info/gems/headless
           # It's enough to add one virtual display instance for all capybara instances
           # We don't need to create virtual display for each session instance
@@ -270,24 +235,25 @@ module Kimurai
     end
 
     def check_recreate_if_memory_for_selenium_poltergeist
-      if @conf[:session_options][:recreate][:if_memory_more_than] && [:selenium, :poltergeist].include?(driver_type)
-        value = @conf[:session_options][:recreate][:if_memory_more_than]
+      if @config[:session][:recreate][:if_memory_more_than].present? && [:selenium, :poltergeist].include?(driver_type)
+        value = @config[:session][:recreate][:if_memory_more_than]
         @session.options[:recreate_if_memory_more_than] = value
+
         Log.debug "Session builder: enabled recreate_if_memory_more_than #{value} for #{driver_name} session"
       end
     end
 
     def check_before_request_clear_cookies
-      if @conf[:session_options][:before_request][:clear_cookies]
+      if @config[:session][:before_request][:clear_cookies]
         @session.options[:before_request_clear_cookies] = true
         Log.debug "Session builder: enabled before_request_clear_cookies for #{driver_name} session"
       end
     end
 
     def check_before_request_set_random_user_agent_for_mechanize_poltergeist
-      if @conf[:session_options][:before_request][:set_random_user_agent] && [:mechanize, :poltergeist].include?(driver_type)
-        if @conf[:user_agents_list]
-          Capybara::Session.options[:user_agents_list] ||= @conf[:user_agents_list]
+      if @config[:session][:before_request][:set_random_user_agent] && [:mechanize, :poltergeist].include?(driver_type)
+        if @config[:user_agents].present?
+          Capybara::Session.options[:user_agents_list] ||= @config[:user_agents]
           @session.options[:before_request_set_random_user_agent] = true
         else
           Log.error "Session builder: to set before_request_set_random_user_agent for #{driver_name}, provide a user_agents_list as well"
@@ -296,19 +262,23 @@ module Kimurai
     end
 
     def check_before_request_set_delay
-      if delay = @conf[:session_options][:before_request][:delay]
+      if delay = @config[:session][:before_request][:delay].presence
         @session.options[:before_request_delay] = delay
         Log.debug "Session builder: enabled before_request_delay for #{driver_name} session"
       end
     end
 
     def check_phantomjs_custom_options
-      # https://github.com/teampoltergeist/poltergeist#customization
-      if options = @conf[:custom_options_for_driver][:poltergeist_phantomjs]
-        options.each do |key, value|
-          @driver_options[key] = value
-        end if driver_type == :poltergeist
+      if driver_type == :poltergeist
+        # https://github.com/teampoltergeist/poltergeist#customization
+        if options = @config[:additional_driver_options][:poltergeist_phantomjs].presence
+          options.each do |key, value|
+            @driver_options[key] = value
+            Log.debug "Session builder: enabled additional_driver_option `#{key}` for #{driver_type}"
+          end
+        end
       end
     end
+
   end
 end

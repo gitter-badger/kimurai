@@ -6,7 +6,7 @@ require 'socket'
 module Kimurai
   class Base
     class << self
-      attr_reader :name, :start_url
+      attr_reader :name, :start_urls
     end
 
     def self.run_info
@@ -131,8 +131,10 @@ module Kimurai
       crawler_instance = self.new
       run_info[:status] = :running
 
-      if start_url
-        crawler_instance.request_to(:parse, url: start_url)
+      if start_urls
+        start_urls.each do |start_url|
+          crawler_instance.request_to(:parse, url: start_url)
+        end
       else
         crawler_instance.parse
       end

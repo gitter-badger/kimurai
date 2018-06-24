@@ -230,7 +230,7 @@ module Kimurai
         value = @config[:session][:recreate][:if_memory_more_than]
         @session.options[:recreate_if_memory_more_than] = value
 
-        Log.debug "Session builder: enabled `recreate_if_memory_more_than` #{value} for `#{driver_name}` session"
+        Log.debug "Session builder: enabled `recreate_if_memory_more_than` #{value} for #{driver_name} session"
       end
     end
 
@@ -260,7 +260,7 @@ module Kimurai
           @session.options[:before_request_change_proxy] = true
         else
           Log.error "Session builder: to set `before_request_change_proxy` " \
-            "for `#{driver_name}`, provide a `proxy` option as well"
+            "for #{driver_name}, provide a `proxy` option as well"
         end
       end
     end

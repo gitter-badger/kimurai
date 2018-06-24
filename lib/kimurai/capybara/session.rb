@@ -178,8 +178,9 @@ module Capybara
       # todo add checkings for a driver type
       if limit = options[:recreate_if_memory_more_than]
         memory = current_memory
+
         if memory > limit
-          logger.warn "Session: limit (#{limit}) of current_memory (#{memory}) is exceeded"
+          logger.error "Session: limit (#{limit}) of current_memory (#{memory}) is exceeded"
           recreate_driver!
         end
       end

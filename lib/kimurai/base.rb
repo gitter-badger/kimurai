@@ -169,16 +169,6 @@ module Kimurai
 
     ###
 
-    ### Fix proxies to simple string, and refactor to ->
-    def self.extract_proxies(file)
-      File.readlines(file).map do |proxy_string|
-        ip, port, type, user, password = proxy_string.strip.split(":")
-        { ip: ip, port: port, type: type, user: user, password: password }
-      end
-    end
-
-    ###
-
     def initialize(driver: self.class.driver, config: {})
       @driver = driver
       @config = self.class.config.deep_merge(config)

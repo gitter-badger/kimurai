@@ -17,30 +17,20 @@ module Capybara
 
     class << self
       attr_accessor :logger
+
+      def logger
+        @logger ||= Logger.new(STDOUT)
+      end
+
+      # rename to global stats
+      def stats
+        @stats ||= Concurrent::Hash.new.merge({
+          requests: 0,
+          responses: 0,
+          requests_errors: Hash.new(0)
+        })
+      end
     end
-
-    def self.logger
-      @logger ||= Logger.new(STDOUT)
-    end
-
-    # todo refactor, change name (to `settings` maybe?)
-    def self.options
-      @options ||= {}
-    end
-
-    def self.stats
-      @stats ||= Concurrent::Hash.new.merge({
-        requests: 0,
-        responses: 0,
-        requests_errors: Hash.new(0)
-      })
-    end
-
-    # def self.current_instances
-    #   ObjectSpace.each_object(self).to_a
-    # end
-
-    ###
 
     def options
       @options ||= {}
@@ -158,11 +148,12 @@ module Capybara
       when :selenium
         current_window.resize_to(width, height)
       when :mechanize
-        logger.debug "Session: mechanize driver don't support this method. Skipped."
+        logger.error "Session: mechanize driver don't support this method. Skipped."
       end
     end
 
     private
+
     def logger
       self.class.logger
     end
@@ -177,7 +168,7 @@ module Capybara
     end
 
     def process_delay(delay)
-      interval = delay.class == Range ? rand(delay) : delay
+      interval = (delay.class == Range ? rand(delay) : delay)
       logger.debug "Session: sleeping (#{interval}) before request..."
 
       sleep interval
@@ -198,11 +189,28 @@ module Capybara
         logger.debug "Session: cleared cookies before request"
       end
 
-      if options[:before_request_set_random_user_agent]
-        user_agent = self.class.options[:user_agents_list].sample
-        add_header("User-Agent", user_agent)
-        logger.debug "Session: changed user_agent before request"
+      if options[:before_request_change_user_agent]
+        if options[:user_agent].respond_to?(:call)
+          user_agent = options[:user_agent].call
+          add_header("User-Agent", user_agent)
+
+          logger.debug "Session: changed user_agent to `#{user_agent}` before request"
+        else
+          raise "Can't change user agent, make sure that Session#options[:user_agent] is present and respond to #call"
+        end
+      end
+
+      if options[:before_request_change_proxy]
+        if options[:proxy].respond_to?(:call)
+          proxy = options[:proxy].call
+          set_proxy(proxy)
+
+          logger.debug "Session: changed proxy to `#{proxy}` before request"
+        else
+          raise "Can't change user agent, make sure that Session#options[:user_agent] is present and respond to #call"
+        end
       end
     end
+
   end
 end

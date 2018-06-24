@@ -6,9 +6,6 @@ require_relative 'session_builder/proxy'
 require_relative 'session_builder/ssl'
 require_relative 'session_builder/window_size'
 
-# add accept language option for selenium
-# ToDo: add #next method to user_agents and proxies in additional to #sample
-
 module Kimurai
   class SessionBuilder
     AVAILABLE_DRIVERS = [:mechanize, :poltergeist_phantomjs, :selenium_firefox, :selenium_chrome]
@@ -20,27 +17,20 @@ module Kimurai
     attr_reader :driver_name, :driver_type
 
     def initialize(driver, config: {})
-      unless driver.presence
-        message = "Provide a driver_name to build a session. You can choose " \
-          "from default drivers (#{AVAILABLE_DRIVERS}) or use a custom one (configure it first)."
-        raise ConfigurationError, message
-      end
-
       @driver_name = driver
       @driver_type = parse_driver_type(driver)
       require_driver!
 
       @config = config
-
       @config[:session_proxy] = begin
         list = config[:proxies].presence
         list.sample if list
       end
 
-      @config[:session_user_agent] = begin
-        list = config[:user_agents]
-        list.sample if list
-      end
+      # @config[:session_user_agent] = begin
+      #   list = config[:user_agents]
+      #   list.sample if list
+      # end
     end
 
     def build
@@ -100,7 +90,8 @@ module Kimurai
       check_cookies
       check_recreate_if_memory_for_selenium_poltergeist
       check_before_request_clear_cookies
-      check_before_request_set_random_user_agent_for_mechanize_poltergeist
+      check_before_request_change_user_agent_for_mechanize_poltergeist
+      check_before_request_change_proxy_for_mechanize_poltergeist
       check_before_request_set_delay
 
       @session
@@ -239,24 +230,37 @@ module Kimurai
         value = @config[:session][:recreate][:if_memory_more_than]
         @session.options[:recreate_if_memory_more_than] = value
 
-        Log.debug "Session builder: enabled recreate_if_memory_more_than #{value} for #{driver_name} session"
+        Log.debug "Session builder: enabled `recreate_if_memory_more_than` #{value} for `#{driver_name}` session"
       end
     end
 
     def check_before_request_clear_cookies
       if @config[:session][:before_request][:clear_cookies]
         @session.options[:before_request_clear_cookies] = true
-        Log.debug "Session builder: enabled before_request_clear_cookies for #{driver_name} session"
+        Log.debug "Session builder: enabled `before_request_clear_cookies` for `#{driver_name}` session"
       end
     end
 
-    def check_before_request_set_random_user_agent_for_mechanize_poltergeist
-      if @config[:session][:before_request][:set_random_user_agent] && [:mechanize, :poltergeist].include?(driver_type)
-        if @config[:user_agents].present?
-          Capybara::Session.options[:user_agents_list] ||= @config[:user_agents]
-          @session.options[:before_request_set_random_user_agent] = true
+    def check_before_request_change_user_agent_for_mechanize_poltergeist
+      if @config[:session][:before_request][:change_user_agent] && [:mechanize, :poltergeist].include?(driver_type)
+        if @config[:user_agent].present?
+          @session.options[:user_agent] = @config[:user_agent]
+          @session.options[:before_request_change_user_agent] = true
         else
-          Log.error "Session builder: to set before_request_set_random_user_agent for #{driver_name}, provide a user_agents_list as well"
+          Log.error "Session builder: to set `before_request_change_user_agent` " \
+            "for #{driver_name}, provide a `user_agent` option as well"
+        end
+      end
+    end
+
+    def check_before_request_change_proxy_for_mechanize_poltergeist
+      if @config[:session][:before_request][:change_proxy] && [:mechanize, :poltergeist].include?(driver_type)
+        if @config[:proxy].present?
+          @session.options[:proxy] = @config[:proxy]
+          @session.options[:before_request_change_proxy] = true
+        else
+          Log.error "Session builder: to set `before_request_change_proxy` " \
+            "for `#{driver_name}`, provide a `proxy` option as well"
         end
       end
     end

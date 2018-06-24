@@ -14,8 +14,9 @@ module Capybara
     end
 
     private
+
     def get_descendant_processes(base)
-      descendants = Hash.new{ |ht,k| ht[k] = [k] }
+      descendants = Hash.new { |ht, k| ht[k] = [k] }
 
       # note: `ps -eo pid,ppid` will list self pid as well. After it will be
       # not exist already

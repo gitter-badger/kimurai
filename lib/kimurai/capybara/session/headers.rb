@@ -7,7 +7,7 @@ module Capybara
       when :mechanize
         driver.browser.agent.request_headers
       when :selenium
-        logger.warn "Session: can't get headers. Selenium don't allow to get headers at all. Skipped this step"
+        logger.error "Session: can't get headers. Selenium don't allow to get headers at all, skipped"
         nil
       end
     end
@@ -19,8 +19,7 @@ module Capybara
       when :mechanize
         driver.browser.agent.request_headers = headers
       when :selenium
-        logger.warn "Session: can't set headers. Selenium don't allow " \
-          "to set headers at all. Skipped this step."
+        logger.error "Session: can't set headers. Selenium don't allow to set headers at all, skipped"
       end
     end
 
@@ -34,8 +33,7 @@ module Capybara
         # https://github.com/sparklemotion/mechanize/blob/master/lib/mechanize.rb#L441
         driver.browser.agent.request_headers[name] = value
       when :selenium
-        logger.warn "Session: can't add header. Selenium don't allow " \
-          "to manage headers at all. Skipped this step."
+        logger.error "Session: can't add header. Selenium don't allow to manage headers at all, skipped"
       end
     end
 

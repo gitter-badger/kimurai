@@ -33,7 +33,7 @@ module Kimurai
           <<~RUBY
             class #{to_crawler_class(crawler_name)} < ApplicationCrawler
               @name = "#{crawler_name}"
-              @default_options = {}
+              @config = {}
 
               def parse(response, url:, data: {})
               end

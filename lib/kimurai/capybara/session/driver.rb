@@ -24,6 +24,8 @@ module Capybara
     def recreate_driver!
       if driver_type == :poltergeist
         @driver.browser.restart
+        logger.info "Session: session driver has been restarted: " \
+          "driver name: #{mode}, pid: #{@driver_pid}, port: #{@driver_port}"
         @driver_pid, @driver_port = get_driver_pid_port(@driver)
       else
         destroy_driver!
@@ -44,8 +46,8 @@ module Capybara
       @driver_type = parse_driver_type(driver.class)
       # added
       @driver_pid, @driver_port = get_driver_pid_port(driver)
-      logger.info "Session: a new session driver has been created " \
-        "(driver name: #{mode}, pid: #{@driver_pid}, port: #{@driver_port})"
+      logger.info "Session: a new session driver has been created: " \
+        "driver name: #{mode}, pid: #{@driver_pid}, port: #{@driver_port}"
 
       driver
     end

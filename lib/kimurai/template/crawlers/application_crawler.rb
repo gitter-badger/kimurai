@@ -1,4 +1,6 @@
 class ApplicationCrawler < Kimurai::Base
+  include ApplicationHelper
+
   # the name of the crawler (no spaces, and special symbols (., _ are allowed)) (should be uniq if not multilang.).
   # Don't set @name in the ApplicationCrawler class. It's a base crawler class for your
   # crawlers. All crawler classes with defined @name can be started within cli

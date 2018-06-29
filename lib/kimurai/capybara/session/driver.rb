@@ -34,6 +34,7 @@ module Capybara
     end
 
     private
+
     def create_session_driver
       unless Capybara.drivers.key?(mode)
         other_drivers = Capybara.drivers.keys.map(&:inspect)

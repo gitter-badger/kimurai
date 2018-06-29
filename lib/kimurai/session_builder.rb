@@ -22,15 +22,6 @@ module Kimurai
       require_driver!
 
       @config = config
-      @config[:session_proxy] = begin
-        list = config[:proxies].presence
-        list.sample if list
-      end
-
-      # @config[:session_user_agent] = begin
-      #   list = config[:user_agents]
-      #   list.sample if list
-      # end
     end
 
     def build

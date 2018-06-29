@@ -6,6 +6,9 @@ require 'kimurai/all'
 require 'bundler/setup'
 Bundler.require(:default, Kimurai.env)
 
+# require custom env variables located in .env file
+require 'dotenv/load'
+
 # require initializers
 Dir.glob(File.join("./config/initializers", "*.rb"), &method(:require))
 

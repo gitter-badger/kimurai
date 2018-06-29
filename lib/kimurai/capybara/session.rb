@@ -180,7 +180,7 @@ module Capybara
         memory = current_memory
 
         if memory > limit
-          logger.error "Session: limit (#{limit}) of current_memory (#{memory}) is exceeded"
+          logger.warn "Session: limit (#{limit}) of current_memory (#{memory}) is exceeded"
           recreate_driver!
         end
       end

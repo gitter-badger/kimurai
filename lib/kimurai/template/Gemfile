@@ -5,8 +5,12 @@ ruby '2.5.0'
 
 # framework
 gem 'kimurai', git: "https://github.com/vfreefly/kimurai"
+
 # require files in directory and child directories recursively
 gem 'require_all'
+
+# dotenv
+gem 'dotenv'
 
 group :development do
   gem 'byebug', platforms: [:mri, :mingw, :x64_mingw]

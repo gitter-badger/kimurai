@@ -135,7 +135,11 @@ module Kimurai
     end
 
     def find_crawler(crawler_name)
-      Base.descendants.find { |crawler_class| crawler_class.name == crawler_name }
+      if klass = Base.descendants.find { |crawler_class| crawler_class.name == crawler_name }
+        klass
+      else
+        raise "There is no such crawler in the project"
+      end
     end
 
     def to_crawler_class(string)

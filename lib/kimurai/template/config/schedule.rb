@@ -13,10 +13,10 @@ set :chronic_options, hours24: true
 # https://github.com/javan/whenever/pull/239#issuecomment-7601246
 # Use this helper to setup time in cron using your home convinient time
 # you should provide the same zone as you pointed in Kimurai.configuration.time_zone
-# it assumed, what your server time is UTC (it's Universal timezone, and should be by
+# it assumed, that your server time is UTC (it's Universal timezone, and should be by
 # default on any server, btw) because cron executing tasks at a time, setuped on server,
 # to check timezone, use `$ timedatectl`.
-# usage:
+# usage:key => "value",
 # every 1.day, at: local_to_utc("7:00", zone: "Europe/Samara") do
 #   start "yandex_crawler.com", output: "log/yandex_crawler.com.log"
 # end

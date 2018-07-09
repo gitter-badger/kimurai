@@ -27,7 +27,7 @@ module Kimurai
         error: nil,
         server: {
           hostname: Socket.gethostname,
-          ipv4: Socket.ip_address_list.find { |ai| ai.ipv4? && !ai.ipv4_loopback? }.ip_address,
+          ipv4: Socket.ip_address_list.find { |ai| ai.ipv4? && !ai.ipv4_loopback? }&.ip_address,
           process_pid: Process.pid
         }
       })

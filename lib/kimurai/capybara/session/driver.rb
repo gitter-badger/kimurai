@@ -82,7 +82,7 @@ module Capybara
 
         [webdriver_pid, webdriver_port]
       when :mechanize
-        logger.error "Session: can't define driver_pid and driver_port for mechanize, not supported"
+        logger.debug "Session: can't define driver_pid and driver_port for mechanize, not supported"
         [nil, nil]
       end
     end

@@ -22,6 +22,8 @@ Kimurai.configure do |config|
   # Define custom timezine, so timestamps in logs and stats database will have
   # this custom timezone. Makes sense to use same custom timezone in config and schedule.rb
   # (using local_to_utc helper)
+  # Or just use everywhere "UTC" (like in rails)
+  # TODO: rename to time_zone (as in Rails) https://stackoverflow.com/a/6635916
   # config.timezone = "UTC"
   # config.timezone = "Europe/Samara"
 

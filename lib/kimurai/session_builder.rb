@@ -81,6 +81,7 @@ module Kimurai
       check_cookies
       check_recreate_if_memory_for_selenium_poltergeist
       check_before_request_clear_cookies
+      check_before_request_clear_and_set_cookies
       check_before_request_change_user_agent_for_mechanize_poltergeist
       check_before_request_change_proxy_for_mechanize_poltergeist
       check_before_request_set_delay
@@ -203,10 +204,10 @@ module Kimurai
             self.class.virtual_display = Headless.new
             self.class.virtual_display.start
 
-            at_exit do
-              self.class.virtual_display.destroy
-              Log.debug "Session builder: destroyed virtual_display instance"
-            end
+            # at_exit do
+            #   self.class.virtual_display.destroy
+            #   Log.debug "Session builder: destroyed virtual_display instance"
+            # end
           end
           Log.debug "Session builder: enabled virtual_display headless mode for #{driver_name}"
         else
@@ -217,26 +218,40 @@ module Kimurai
     end
 
     def check_recreate_if_memory_for_selenium_poltergeist
-      if @config[:session][:recreate][:if_memory_more_than].present? && [:selenium, :poltergeist].include?(driver_type)
-        value = @config[:session][:recreate][:if_memory_more_than]
-        @session.options[:recreate_if_memory_more_than] = value
+      if @config[:session][:recreate][:if_memory_more_than].present?
+        if [:selenium, :poltergeist].include?(driver_type)
+          value = @config[:session][:recreate][:if_memory_more_than]
+          @session.options[:recreate_if_memory_more_than] = value
 
-        Log.debug "Session builder: enabled `recreate_if_memory_more_than` #{value} for #{driver_name} session"
+          Log.debug "Session builder: enabled `recreate_if_memory_more_than` #{value} for #{driver_name} session"
+        else
+          Log.warn "Session builder: driver type #{driver_type} don't support recreate_if_memory_more_than, skip"
+        end
       end
     end
 
     def check_before_request_clear_cookies
       if @config[:session][:before_request][:clear_cookies]
-        @session.options[:before_request_clear_cookies] = true
+        @session.options[:before_request][:clear_cookies] = true
         Log.debug "Session builder: enabled `before_request_clear_cookies` for `#{driver_name}` session"
+      end
+    end
+
+    def check_before_request_clear_and_set_cookies
+      if @config[:session][:before_request][:clear_and_set_cookies]
+        if cookies = @config[:cookies].presence
+          @session.options[:before_request][:clear_and_set_cookies] = cookies
+          Log.debug "Session builder: enabled `before_request_clear_and_set_cookies` for `#{driver_name}` session"
+        else
+          Log.error "Session builder: check_before_request_clear_and_set_cookies: cookies are not present to set"
+        end
       end
     end
 
     def check_before_request_change_user_agent_for_mechanize_poltergeist
       if @config[:session][:before_request][:change_user_agent] && [:mechanize, :poltergeist].include?(driver_type)
         if @config[:user_agent].present?
-          @session.options[:user_agent] = @config[:user_agent]
-          @session.options[:before_request_change_user_agent] = true
+          @session.options[:before_request][:change_user_agent] = @config[:user_agent]
         else
           Log.error "Session builder: to set `before_request_change_user_agent` " \
             "for #{driver_name}, provide a `user_agent` option as well"
@@ -245,20 +260,23 @@ module Kimurai
     end
 
     def check_before_request_change_proxy_for_mechanize_poltergeist
-      if @config[:session][:before_request][:change_proxy] && [:mechanize, :poltergeist].include?(driver_type)
-        if @config[:proxy].present?
-          @session.options[:proxy] = @config[:proxy]
-          @session.options[:before_request_change_proxy] = true
+      if @config[:session][:before_request][:change_proxy]
+        if [:mechanize, :poltergeist].include?(driver_type)
+          if @config[:proxy].present?
+            @session.options[:before_request][:change_proxy] = @config[:proxy]
+          else
+            Log.error "Session builder: to set `before_request_change_proxy` " \
+              "for #{driver_name}, provide a `proxy` option as well"
+          end
         else
-          Log.error "Session builder: to set `before_request_change_proxy` " \
-            "for #{driver_name}, provide a `proxy` option as well"
+          Log.warn "Session builder: driver type #{driver_type} don't allow to change proxy dynamically, skipped"
         end
       end
     end
 
     def check_before_request_set_delay
       if delay = @config[:session][:before_request][:delay].presence
-        @session.options[:before_request_delay] = delay
+        @session.options[:before_request][:delay] = delay
         Log.debug "Session builder: enabled before_request_delay for #{driver_name} session"
       end
     end

@@ -10,6 +10,10 @@ module Kimurai
       end
     end
 
+    def name
+      self.class.to_s.sub(/.*?::/, "").underscore.to_sym
+    end
+
     def logger
       Log.instance
     end

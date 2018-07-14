@@ -33,7 +33,9 @@ module Capybara
     end
 
     def options
-      @options ||= {}
+      @options ||= {
+        before_request: {}
+      }
     end
 
     def stats
@@ -48,14 +50,14 @@ module Capybara
     # ToDo: maybe merge #post_request to this method. Something like
     # visit(visit_url, method: :get, delay:)
     alias_method :original_visit, :visit
-    def visit(visit_uri, delay: options[:before_request_delay], max_retries: 3)
+    def visit(visit_uri, delay: options[:before_request][:delay], skip_request_options: false, max_retries: 3)
       process_delay(delay) if delay
 
       begin
         retries ||= 0
         sleep_interval ||= 0
 
-        check_request_options
+        check_request_options unless skip_request_options
 
         self.class.stats[:requests] += 1
         stats[:requests] += 1
@@ -180,38 +182,48 @@ module Capybara
         memory = current_memory
 
         if memory > limit
+          url = current_url
+
           logger.warn "Session: limit (#{limit}) of current_memory (#{memory}) is exceeded"
           recreate_driver!
+
+          if driver_type == :selenium && options[:before_request][:clear_and_set_cookies]
+            logger.debug "Session: visiting previous url after recreate_driver " \
+              "(for selenium), because clear_and_set_cookies before_request enabled"
+            visit(url, skip_request_options: true)
+          end
         end
       end
 
-      if options[:before_request_clear_cookies]
+      if options[:before_request][:clear_cookies]
         clear_cookies!
         logger.debug "Session: cleared cookies before request"
       end
 
-      if options[:before_request_change_user_agent]
-        if options[:user_agent].respond_to?(:call)
-          user_agent = options[:user_agent].call
-          add_header("User-Agent", user_agent)
+      if cookies = options[:before_request][:clear_and_set_cookies]
+        clear_cookies!
+        set_cookies(cookies)
 
-          logger.debug "Session: changed user_agent to `#{user_agent}` before request"
+        logger.debug "Session: cleared and set default cookies before request"
+      end
+
+      if user_agent = options[:before_request][:change_user_agent]
+        if user_agent.respond_to?(:call)
+          add_header("User-Agent", user_agent.call)
+          logger.debug "Session: changed user_agent before request"
         else
-          raise "Can't change user agent, make sure that Session#options[:user_agent] is present and respond to #call"
+          raise "Can't change user agent, make sure that user_agent respond to #call"
         end
       end
 
-      if options[:before_request_change_proxy]
-        if options[:proxy].respond_to?(:call)
-          proxy = options[:proxy].call
-          set_proxy(proxy)
-
-          logger.debug "Session: changed proxy to `#{proxy}` before request"
+      if proxy = options[:before_request][:change_proxy]
+        if proxy.respond_to?(:call)
+          set_proxy(proxy.call)
+          logger.debug "Session: changed proxy before request"
         else
-          raise "Can't change user agent, make sure that Session#options[:user_agent] is present and respond to #call"
+          raise "Can't change proxy, make sure that proxy respond to #call"
         end
       end
     end
-
   end
 end

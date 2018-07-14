@@ -83,7 +83,7 @@ module Kimurai
       at_exit { callback.call }
 
       # update run status in database every 3 seconds
-      Concurrent::TimerTask.new(execution_interval: 3, timeout_interval: 5) { callback.call }.execute
+      Concurrent::TimerTask.new(execution_interval: 3, timeout_interval: 3) { callback.call }.execute
     end
 
     ###
@@ -104,9 +104,9 @@ module Kimurai
 
       # initialization
       pipelines = self.pipelines.map do |pipeline|
-        pipeline_class = pipeline.to_s.classify.constantize
-        pipeline_class.crawler = self
-        pipeline_class
+        klass = pipeline.to_s.classify.constantize
+        klass.crawler = self
+        klass
       end
 
       open_crawler if self.respond_to? :open_crawler
@@ -254,6 +254,10 @@ module Kimurai
           part.each do |request_data|
             crawler.request_to(handler, request_data)
           end
+        rescue => e
+          Log.fatal "Crawler: in_parallel: there is an execption from thread " \
+            "#{Thread.current.object_id}: #{e.inspect}"
+          raise e
         ensure
           crawler.browser.destroy_driver!
         end

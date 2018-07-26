@@ -201,11 +201,12 @@ module Kimurai
           # We don't need to create virtual display for each session instance
           unless self.class.virtual_display
             require 'headless'
-            self.class.virtual_display = Headless.new
+            # https://github.com/leonid-shevtsov/headless#running-tests-in-parallel
+            self.class.virtual_display = Headless.new(reuse: true, destroy_at_exit: false)
             self.class.virtual_display.start
 
-            # at_exit do
-            #   self.class.virtual_display.destroy
+            # at_exit d
+            #   self.class.virtual_display.dest
             #   Log.debug "Session builder: destroyed virtual_display instance"
             # end
           end
@@ -225,7 +226,7 @@ module Kimurai
 
           Log.debug "Session builder: enabled `recreate_if_memory_more_than` #{value} for #{driver_name} session"
         else
-          Log.warn "Session builder: driver type #{driver_type} don't support recreate_if_memory_more_than, skip"
+          Log.debug "Session builder: driver type #{driver_type} don't support recreate_if_memory_more_than, skip"
         end
       end
     end

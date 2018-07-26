@@ -3,8 +3,12 @@ require 'concurrent'
 require 'uri'
 require 'socket'
 
+require_relative 'base_helper'
+
 module Kimurai
   class Base
+    include BaseHelper
+
     class << self
       attr_reader :name, :start_urls
     end
@@ -153,7 +157,7 @@ module Kimurai
       total_time = (stop_time - run_info[:start_time]).round(3)
       run_info.merge!(stop_time: stop_time, running_time: total_time)
 
-      message = "Crawler: stopped: #{run_info}"
+      message = "Crawler: stopped: #{run_info.merge(running_time: run_info[:running_time]&.duration)}"
       failed? ? Log.fatal(message) : Log.info(message)
     end
 
@@ -173,7 +177,7 @@ module Kimurai
       @driver = driver
       @config = self.class.config.deep_merge(config)
       @pipelines = self.class.pipelines
-        .map { |pipeline| pipeline.to_s.classify.constantize.new }
+        .map { |pipeline| [pipeline, pipeline.to_s.classify.constantize.new] }.to_h
     end
 
     def request_to(handler, type = :get, url:, data: {}, delay: nil)
@@ -199,12 +203,17 @@ module Kimurai
     end
 
     def send_item(item, options = {})
-      Log.debug "Pipeline: starting processing item..."
+      Log.debug "Pipeline: starting processing item through #{@pipelines.size} #{'pipeline'.pluralize(@pipelines.size)}..."
       self.class.run_info[:items][:processed] += 1
 
-      @pipelines.each do |pipeline|
+      # you can provide custom options for each pipeline, and then access these
+      # options inside of pipeline's method #process_item. Use this option
+      # if you need custom behaviour for pipeline for some crawler
+      # example:
+      # send_item item, validator: { skip_uniq_checking: true }
+      @pipelines.each do |name, pipeline|
         item =
-          if pipeline_options = options[pipeline.class.name]
+          if pipeline_options = options[name]
             pipeline.process_item(item, options: pipeline_options)
           else
             pipeline.process_item(item)
@@ -214,22 +223,22 @@ module Kimurai
       self.class.run_info[:items][:saved] += 1
       Log.info "Pipeline: processed item: #{JSON.generate(item)}"
     rescue => e
-      error = e.inspect
+      register_drop_error(e, item)
+      false
+    else
+      true
+    ensure
+      Log.info "Stats items: sent: #{self.class.run_info[:items][:processed]}, " \
+        "processed: #{self.class.run_info[:items][:saved]}"
+    end
+
+    def register_drop_error(error, item)
+      error = error.inspect
       self.class.run_info[:items][:drop_errors][error] += 1
+
       Log.error "Pipeline: dropped item: #{error}: #{item}"
       Log.error "Pipeline: full error: #{e.full_message}"
-    ensure
-      Log.info "Stats items: sent: #{self.class.run_info[:items][:processed]}, processed: #{self.class.run_info[:items][:saved]}"
     end
-
-    ###
-
-    def absolute_url(url, base:)
-      return unless url
-      URI.join(base, URI.escape(url)).to_s
-    end
-
-    ###
 
     # http://phrogz.net/programmingruby/tut_threads.html
     # https://www.sitepoint.com/threads-ruby/
@@ -238,17 +247,19 @@ module Kimurai
     # to do, add optional post type here too
     # to do, add note about to include driver options, or use a default ones,
     # upd it's already included, see initialize and def page
-    def in_parallel(handler, size, requests:, driver: self.class.driver, config: {})
-      parts = requests.in_groups(size, false)
-      threads = []
+    # New:
+    def in_parallel(handler, threads_count, requests:, sort: true, driver: self.class.driver, config: {})
+      parts = sort ? requests.in_sorted_groups(threads_count, false) : requests.in_groups(threads_count, false)
+      requests_count = requests.size
 
+      threads = []
       start_time = Time.now
-      Log.debug "Crawler: in_parallel: starting processing #{requests.size} requests within #{size} threads"
+      Log.info "Crawler: in_parallel: starting processing #{requests_count} requests within #{threads_count} threads"
 
       parts.each do |part|
         threads << Thread.new(part) do |part|
           # stop crawler's process if there is an exeption in any thread
-          # Thread.current.abort_on_exception = true
+          Thread.current.abort_on_exception = true
 
           crawler = self.class.new(driver: driver, config: config)
           part.each do |request_data|
@@ -256,7 +267,7 @@ module Kimurai
           end
         rescue => e
           Log.fatal "Crawler: in_parallel: there is an execption from thread " \
-            "#{Thread.current.object_id}: #{e.inspect}"
+            "#{Thread.current.object_id}: #{e.inspect}" # ?
           raise e
         ensure
           crawler.browser.destroy_driver!
@@ -266,8 +277,8 @@ module Kimurai
       end
 
       threads.each(&:join)
-      Log.debug "Crawler: in_parallel: stopped processing #{requests.size} " \
-        "requests within #{size} threads (total time: #{Time.now - start_time})"
+      Log.info "Crawler: in_parallel: stopped processing #{requests_count} " \
+        "requests within #{threads_count} threads (total time: #{(Time.now - start_time).duration})"
     end
   end
 end

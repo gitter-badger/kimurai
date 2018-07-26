@@ -138,7 +138,8 @@ module Kimurai
       if klass = Base.descendants.find { |crawler_class| crawler_class.name == crawler_name }
         klass
       else
-        raise "There is no such crawler in the project"
+        raise "There is no such crawler in the project " \
+          "(type `$ bundle exec kimurai list` to list all project crawlers)"
       end
     end
 

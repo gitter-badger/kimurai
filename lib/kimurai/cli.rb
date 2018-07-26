@@ -43,11 +43,11 @@ module Kimurai
 
         if start_url = options["start_url"]
           insert_into_file(crawler_path, after: %Q{@name = "#{crawler_name}"\n}) do
-            %Q{  @start_url = "#{start_url}"\n}
+            %Q{  @start_urls = ["#{start_url}"]\n}
           end
         end
       else
-        raise "Don't know this generator"
+        raise "Don't know this generator type"
       end
     end
 
@@ -58,8 +58,8 @@ module Kimurai
       check_for_project
       require './config/boot'
 
-      crawler_class = find_crawler(crawler_name)
-      crawler_class.start!
+      klass = find_crawler(crawler_name)
+      klass.start!
     end
 
     # https://doc.scrapy.org/en/latest/topics/commands.html#parse
@@ -69,10 +69,10 @@ module Kimurai
       check_for_project
       require './config/boot'
 
-      crawler_class = find_crawler(crawler_name)
-      crawler_class.preload!
+      klass = find_crawler(crawler_name)
+      klass.preload!
 
-      crawler_instance = crawler_class.new
+      crawler_instance = klass.new
       crawler_instance.request_to(callback, url: options["url"])
     end
 
@@ -81,8 +81,8 @@ module Kimurai
       check_for_project
       require './config/boot'
 
-      Base.descendants.each do |crawler_class|
-        puts crawler_class.name if crawler_class.name
+      Base.descendants.each do |klass|
+        puts klass.name if klass.name
       end
     end
 
@@ -104,21 +104,26 @@ module Kimurai
     def console(crawler_name = nil)
       check_for_project
 
-      # if nil, will be called application crawler
       require './config/boot'
 
-      crawler_class = find_crawler(crawler_name)
-      crawler_class.preload!
+      klass =
+        if crawler_name
+          find_crawler(crawler_name)
+        else
+          ApplicationCrawler
+        end
+
+      klass.preload!
 
       if driver = options["driver"]&.to_sym
-        crawler_class.new(driver: driver).console
+        klass.new(driver: driver).console
       else
-        crawler_class.new.console
+        klass.new.console
       end
     end
 
     # In config there should be enabled stats and database uri
-    desc "dashboard", "Show full report stats about runs and sessions"
+    desc "dashboard", "Run web dashboard server"
     def dashboard
       check_for_project
 

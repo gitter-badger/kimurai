@@ -1,4 +1,4 @@
-# except stats.rb, dashboard, and runner
+# except stats, dashboard, runner and cli
 
 require 'active_support'
 require 'active_support/core_ext'

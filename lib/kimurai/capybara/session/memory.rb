@@ -30,7 +30,7 @@ module Capybara
     # https://github.com/schneems/get_process_mem
     # Note: for Linux takes PSS (not RSS) memory
     def get_process_memory(pid)
-      case platform = Gem::Platform.local.os
+      case @platform ||= Gem::Platform.local.os
       when "linux"
         begin
           file = Pathname.new "/proc/#{pid}/smaps"
@@ -53,7 +53,7 @@ module Capybara
         mem = `ps -o rss= -p #{pid}`.strip
         mem.empty? ? 0 : mem.to_i
       else
-        raise "Can't check process memory, wrong type of platform: #{platform}"
+        raise "Can't check process memory, wrong type of platform: #{@platform}"
       end
     end
   end

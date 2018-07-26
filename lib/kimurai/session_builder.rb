@@ -205,8 +205,8 @@ module Kimurai
             self.class.virtual_display = Headless.new(reuse: true, destroy_at_exit: false)
             self.class.virtual_display.start
 
-            # at_exit d
-            #   self.class.virtual_display.dest
+            # at_exit do
+            #   self.class.virtual_display.destroy
             #   Log.debug "Session builder: destroyed virtual_display instance"
             # end
           end
@@ -219,14 +219,16 @@ module Kimurai
     end
 
     def check_recreate_if_memory_for_selenium_poltergeist
-      if @config[:session][:recreate][:if_memory_more_than].present?
+      # ToDo: add another option (requests_count)
+      if @config[:session][:recreate_driver_if][:memory_size].present?
         if [:selenium, :poltergeist].include?(driver_type)
-          value = @config[:session][:recreate][:if_memory_more_than]
+          value = @config[:session][:recreate_driver_if][:memory_size]
+          # ToDo: refactor Session#options as well
           @session.options[:recreate_if_memory_more_than] = value
 
-          Log.debug "Session builder: enabled `recreate_if_memory_more_than` #{value} for #{driver_name} session"
+          Log.debug "Session builder: enabled recreate_driver_if memory_size will reach #{value} for #{driver_name} session"
         else
-          Log.debug "Session builder: driver type #{driver_type} don't support recreate_if_memory_more_than, skip"
+          Log.debug "Session builder: driver type #{driver_type} don't support recreate_driver_if memory_size option, skipped"
         end
       end
     end

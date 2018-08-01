@@ -25,8 +25,11 @@ end
 # crawler log file to be overwritten (>) before each run, pass lambda, (example):
 # start "google_crawler.com", output: -> { "> log/google_crawler.com.log 2>&1" }
 
+# project job types
 job_type :start,  "cd :path && KIMURAI_ENV=:environment bundle exec kimurai start :task :output"
 job_type :runner, "cd :path && KIMURAI_ENV=:environment bundle exec kimurai runner --jobs :task :output"
+# single file job type
+job_type :singe, "cd :path && KIMURAI_ENV=:environment bundle exec ruby :task :output"
 
 ### Schedule ###
 
@@ -41,6 +44,7 @@ job_type :runner, "cd :path && KIMURAI_ENV=:environment bundle exec kimurai runn
   # Number argument it's a number of concurrect jobs:
   # runner 3, output:"log/runner.log"
 
-  # Example to schedule single crawler file (without project):
-
+  # Example to schedule single crawler file (without project)
+  # Note: you need to have Gemfile as well:
+  # single "./single_crawler.rb", output: "single_crawler.log"
 # end

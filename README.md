@@ -16,8 +16,11 @@ Works by default with headless chromium/firefox, phantomjs and mechanize (fake h
 * Full stats for each crawler's run: requests/items count + web dashboard
 * Settings and crawlers inheritation (provide example with category urls and i18n)
 * Resume crawling if previous run was failed (using database)
+* Auto server setup (ubuntu 16.04-18.04) and deploy using commands `setup` and `deploy`
+* Runner to run all project crawlers in parallel
 * CLI
 * etc.
+
 
 ## License
 The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).

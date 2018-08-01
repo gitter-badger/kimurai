@@ -2,7 +2,7 @@ require 'thor'
 
 module Kimurai
   class CLI < Thor
-    # ToDo refactor genetator part to extract into separate class
+    # ToDo: move generators to separate class
     include Thor::Actions
 
     def self.source_root
@@ -22,33 +22,54 @@ module Kimurai
     desc "generate", "Generator, available types: crawler"
     option :start_url, type: :string, banner: "Start url for a new crawler crawler"
     def generate(generator_type, *args)
-      check_for_project
-
-      if generator_type == "crawler"
-        crawler_name = args.shift
-        crawler_path = "crawlers/#{crawler_name}.rb"
-        raise "Crawler #{crawler_path} already exists" if File.exists? crawler_path
-
-        create_file crawler_path do
-          <<~RUBY
-            class #{to_crawler_class(crawler_name)} < ApplicationCrawler
-              @name = "#{crawler_name}"
-              @config = {}
-
-              def parse(response, url:, data: {})
-              end
-            end
-          RUBY
-        end
-
-        if start_url = options["start_url"]
-          insert_into_file(crawler_path, after: %Q{@name = "#{crawler_name}"\n}) do
-            %Q{  @start_urls = ["#{start_url}"]\n}
-          end
-        end
+      case generator_type
+      when "crawler"
+        check_for_project
+        generate_crawler(args)
+      when "schedule"
+        copy_file "template/config/schedule.rb", "./schedule.rb"
       else
-        raise "Don't know this generator type"
+        raise "Don't know generator type: #{generator_type}"
       end
+    end
+
+    ###
+
+    desc "setup", "Setup server"
+    option :port, aliases: :p, type: :string, banner: "Port for ssh connection"
+    option "ask-sudo", type: :boolean, banner: "Provide sudo password for a user to install system-wide packages"
+    option "ask-auth-pass", type: :boolean, banner: "Auth using password"
+    option "ssh-key-path", type: :string, banner: "Auth using ssh key"
+    option :local, type: :boolean, banner: "Run setup on a local machine (Ubuntu only)"
+    def setup(user_host)
+      command = get_ansible_command(user_host, playbook: "main.yml")
+
+      pid = spawn *command
+      Process.wait pid
+    end
+
+    desc "deploy", "Deploy project to the server and update cron schedule"
+    option :port, aliases: :p, type: :string, banner: "Port for ssh connection"
+    option "ask-auth-pass", type: :boolean, banner: "Auth using password"
+    option "ssh-key-path", type: :string, banner: "Auth using ssh key"
+    option "repo-url", type: :string, banner: "Repo url"
+    option "git-key-path", type: :string, banner: "SSH key for a git repo"
+    def deploy(user_host)
+      if !`git status --short`.empty?
+        raise "Please commit first your changes"
+      elsif !`git rev-list master...origin/master`.empty?
+        raise "Please push your commits to the remote origin repo"
+      end
+
+      repo_url = options["repo-url"] ? options["repo-url"] : `git remote get-url origin`.strip
+      repo_name = repo_url[/\/([^\/]*)\.git/i, 1]
+
+      command = get_ansible_command(user_host, playbook: "deploy.yml",
+        vars: { repo_url: repo_url, repo_name: repo_name, git_key_path: options["git-key-path"] }
+      )
+
+      pid = spawn *command
+      Process.wait pid
     end
 
     ###
@@ -134,6 +155,82 @@ module Kimurai
     end
 
     private
+
+    def generate_crawler(args)
+      crawler_name = args.shift
+      crawler_path = "crawlers/#{crawler_name}.rb"
+      raise "Crawler #{crawler_path} already exists" if File.exists? crawler_path
+
+      create_file crawler_path do
+        <<~RUBY
+          class #{to_crawler_class(crawler_name)} < ApplicationCrawler
+            @name = "#{crawler_name}"
+            @config = {}
+
+            def parse(response, url:, data: {})
+            end
+          end
+        RUBY
+      end
+
+      if start_url = options["start_url"]
+        insert_into_file(crawler_path, after: %Q{@name = "#{crawler_name}"\n}) do
+          %Q{  @start_urls = ["#{start_url}"]\n}
+        end
+      end
+    end
+
+    def get_ansible_command(user_host_string, playbook:, vars: {})
+      require 'cliver'
+
+      unless Cliver.detect("ansible-playbook")
+        raise "Can't find `ansible-playbook` executable, to install: " \
+          "mac os: `$ brew install ansible`, ubuntu: `$ sudo apt install ansible`"
+      end
+
+      user = user_host_string[/(.*?)\@/, 1]
+      host = user_host_string[/\@(.+)/, 1] || user_host_string
+      inventory = options["port"] ? "#{host}:#{options['port']}," : "#{host},"
+
+      gem_dir = Gem::Specification.find_by_name("kimurai").gem_dir
+      playbook_path = gem_dir + "/lib/kimurai/provision/" + playbook
+
+      command = [
+        "ansible-playbook", playbook_path,
+        "--inventory", inventory,
+        "--ssh-extra-args", "-oForwardAgent=yes",
+        "--connection", options["local"] ? "local" : "smart",
+        "--extra-vars", "ansible_python_interpreter=/usr/bin/python3"
+      ]
+
+      vars.each do |key, value|
+        next if value.nil? || value.empty?
+        command.push "--extra-vars", "#{key}=#{value}"
+      end
+
+      if user
+        command.push "--user", user
+      end
+
+      if options["ask-sudo"]
+        command.push "--ask-become-pass"
+      end
+
+      if options["ask-auth-pass"]
+        unless Cliver.detect("sshpass")
+          raise "Can't find `sshpass` executable for password authentication, to install: " \
+            "OS X: `$ brew install http://git.io/sshpass.rb`, Ubuntu: `$ sudo apt install sshpass`"
+        end
+
+        command.push "--ask-pass"
+      end
+
+      if ssh_key_path = options["ssh-key-path"]
+        command.push "--private-key", ssh_key_path
+      end
+
+      command
+    end
 
     def check_for_project
       raise "Can't find a project" unless Dir.exists? "crawlers"

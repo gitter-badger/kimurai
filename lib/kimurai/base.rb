@@ -219,13 +219,13 @@ module Kimurai
             pipeline.process_item(item)
           end
       end
-
-      self.class.run_info[:items][:saved] += 1
-      Log.info "Pipeline: processed item: #{JSON.generate(item)}"
     rescue => e
       register_drop_error(e, item)
       false
     else
+      self.class.run_info[:items][:saved] += 1
+      Log.info "Pipeline: processed item: #{JSON.generate(item)}"
+
       true
     ensure
       Log.info "Stats items: sent: #{self.class.run_info[:items][:processed]}, " \

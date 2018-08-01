@@ -30,14 +30,17 @@ job_type :runner, "cd :path && KIMURAI_ENV=:environment bundle exec kimurai runn
 
 ### Schedule ###
 
-# Usage:
+# Usage (check examples here https://github.com/javan/whenever#example-schedulerb-file):
 # every 1.hour do
-  # Example to schedule single crawler:
+  # Example to schedule single crawler in the project:
   # start "google_crawler.com", output: "log/google_crawler.com.log"
 
-  # Example to schedule all project crawlers using runner. Each crawler will write
+  # Example to schedule all crawlers in the project using runner. Each crawler will write
   # own output to the log/crawler_name.log file (handled by runner itself).
   # Runner output will be written to log/runner.log file.
   # Number argument it's a number of concurrect jobs:
   # runner 3, output:"log/runner.log"
+
+  # Example to schedule single crawler file (without project):
+
 # end

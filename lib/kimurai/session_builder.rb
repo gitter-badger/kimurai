@@ -54,6 +54,7 @@ module Kimurai
         # other
         check_headless_mode_for_selenium
         check_disable_images_for_selenium_poltergeist
+
         # added phantomJS options
         check_phantomjs_custom_options
 
@@ -101,9 +102,7 @@ module Kimurai
         when :poltergeist_phantomjs
           Capybara::Poltergeist::Driver.new(app, @driver_options)
         when :mechanize
-          # https://www.rubydoc.info/gems/capybara-mechanize/1.5.0
           driver = Capybara::Mechanize::Driver.new("app")
-          # refactor, maybe there is a way to set settings as options for mechanize
           driver.configure { |a| a.history.max_size = 3 }
           driver
         end
@@ -117,8 +116,7 @@ module Kimurai
       when :selenium_firefox
         @driver_options = Selenium::WebDriver::Firefox::Options.new
         @driver_options.profile = Selenium::WebDriver::Firefox::Profile.new
-        # default to open all in tabs, not windows (UPD didn't work)
-        @driver_options.profile["browser.link.open_newwindow"] = 3
+        @driver_options.profile["browser.link.open_newwindow"] = 3 # open windows in tabs
         @driver_options.profile["media.peerconnection.enabled"] = false # disable web rtc
       when :selenium_chrome
         default_args = %w[--disable-gpu --no-sandbox --disable-translate]
@@ -128,7 +126,6 @@ module Kimurai
           js_errors: false,
           debug: false,
           inspector: false,
-          # timeout: 10,
           phantomjs_options: []
         }
       end
@@ -144,7 +141,7 @@ module Kimurai
         require 'capybara/mechanize'
       end
 
-      Log.debug "Session builder: required driver gem (#{driver_type})"
+      Log.debug "Session builder: driver gem required: #{driver_type}"
     end
 
     def parse_driver_type(name)
@@ -165,11 +162,10 @@ module Kimurai
         if driver_type == :selenium
           if @config[:selenium_url_to_set_cookies].present?
             @session.visit(@config[:selenium_url_to_set_cookies])
+            @session.set_cookies(@config[:cookies])
           else
-            raise ConfigurationError, "Please provide a visit url to set default cookies for selenium"
+            raise ConfigurationError, "Please provide `selenium_url_to_set_cookies` to set default cookies for selenium"
           end
-
-          @session.set_cookies(@config[:cookies])
         else
           @session.set_cookies(@config[:cookies])
         end
@@ -196,19 +192,11 @@ module Kimurai
     def check_headless_mode_for_selenium
       if ENV["HEADLESS"] != "false" && driver_type == :selenium
         if @config[:headless_mode] == :virtual_display
-          # https://www.rubydoc.info/gems/headless
-          # It's enough to add one virtual display instance for all capybara instances
-          # We don't need to create virtual display for each session instance
           unless self.class.virtual_display
             require 'headless'
             # https://github.com/leonid-shevtsov/headless#running-tests-in-parallel
             self.class.virtual_display = Headless.new(reuse: true, destroy_at_exit: false)
             self.class.virtual_display.start
-
-            # at_exit do
-            #   self.class.virtual_display.destroy
-            #   Log.debug "Session builder: destroyed virtual_display instance"
-            # end
           end
           Log.debug "Session builder: enabled virtual_display headless mode for #{driver_name}"
         else

@@ -30,12 +30,11 @@ module Kimurai
       ENV.store("CURRENT_CRAWLER", value)
     end
 
-    # timezone
-    def timezone
+    def time_zone
       ENV["TZ"]
     end
 
-    def timezone=(value)
+    def time_zone=(value)
       ENV.store("TZ", value)
     end
   end

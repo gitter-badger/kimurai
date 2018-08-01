@@ -19,22 +19,23 @@ Kimurai.configure do |config|
   #   Sender.send_notification("Stopped session: #{json}")
   # end
 
-  # Define custom timezine, so timestamps in logs and stats database will have
-  # this custom timezone. Makes sense to use same custom timezone in config and schedule.rb
+  # Define custom time zine, so timestamps in logs and stats database will have
+  # this custom time zone. Makes sense to use same custom time zone in config and schedule.rb
   # (using local_to_utc helper)
   # Or just use everywhere "UTC" (like in rails)
-  # TODO: rename to time_zone (as in Rails) https://stackoverflow.com/a/6635916
-  # config.timezone = "UTC"
-  # config.timezone = "Europe/Samara"
+  # config.time_zone = "UTC"
+  # config.time_zone = "Europe/Moscow"
 
   # enable database stats
   # config.stats = true
 
   # set database url (sequel scheme) for stats (required if config.stats set to true)
-  # default database is sqlite3
   # config.stats_database = "sqlite://db/crawlers_runs_#{Kimurai.env}.sqlite3"
 
   # By default, colored logger enabled in development mode. If you would like
   # to disable it, set setting to false
   # config.colorize_logger = false
 end
+
+# Note: you can create `config/environments` folder and put there specific env configurations
+# for Kimurai (in additional to this config/application.rb main configuration)

@@ -32,10 +32,10 @@ module Kimurai
       def create_default_logger
         STDOUT.sync = true
 
-        level = "Logger::#{ENV.fetch('LOGGER_LEVEL', 'DEBUG')}".constantize
-        Logger.new(STDOUT, formatter: LoggerFormatter,
-                           level: level,
-                           progname: ENV["CURRENT_CRAWLER"])
+        level = "Logger::#{ENV.fetch('LOGGER_LEVEL', 'DEBUG').upcase}".constantize
+        ::Logger.new(STDOUT, formatter: LoggerFormatter,
+                             level: level,
+                             progname: ENV["CURRENT_CRAWLER"])
       end
     end
   end

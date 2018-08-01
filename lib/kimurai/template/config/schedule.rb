@@ -10,7 +10,7 @@ set :chronic_options, hours24: true
 # Use local_to_utc helper to setup execution time using your local timezone instead
 # of server's timezone (which is probably and should be UTC, to check run `$ timedatectl`).
 # Also maybe you'll want to set same timezone in kimurai as well (`Kimurai.configuration.time_zone =`)
-# to have crawlers logs in specific timezone format
+# to have crawlers logs in specific time zone format
 # Example usage of helper:
 # every 1.day, at: local_to_utc("7:00", zone: "Europe/Moscow") do
 #   start "google_crawler.com", output: "log/google_crawler.com.log"
@@ -41,7 +41,7 @@ job_type :singe, "cd :path && KIMURAI_ENV=:environment bundle exec ruby :task :o
   # Example to schedule all crawlers in the project using runner. Each crawler will write
   # own output to the log/crawler_name.log file (handled by runner itself).
   # Runner output will be written to log/runner.log file.
-  # Number argument it's a number of concurrect jobs:
+  # Number argument it's a number of concurrent jobs:
   # runner 3, output:"log/runner.log"
 
   # Example to schedule single crawler file (without project)

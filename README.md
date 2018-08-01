@@ -17,10 +17,12 @@ Works by default with headless chromium/firefox, phantomjs and mechanize (fake h
 * Settings and crawlers inheritation (provide example with category urls and i18n)
 * Resume crawling if previous run was failed (using database)
 * Auto server setup (ubuntu 16.04-18.04) and deploy using commands `setup` and `deploy`
+* Easily schedule crawlers to run using whenever (no need to know cron syntax) configuration
 * Runner to run all project crawlers in parallel
+* Active Support included, so you can use super handy methods for scrapping, like `#squish`, `#presence/#present`, `#titelize`, `#truncate`, etc.
+* Built-in helper to save items to json/json lines/csv/yaml formats.
 * CLI
 * etc.
-
 
 ## License
 The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).

@@ -1,6 +1,6 @@
 class Validator < Kimurai::Pipeline
-  def self.open_crawler
-    # puts "From validator, open crawler"
+  def self.at_start
+    # puts "From validator, before start crawler"
   end
 
   def process_item(item, options: {})
@@ -8,7 +8,7 @@ class Validator < Kimurai::Pipeline
     item
   end
 
-  def self.close_crawler
-    # puts "From validator, closed crawler"
+  def self.at_stop
+    # puts "From validator, after stop crawler"
   end
 end

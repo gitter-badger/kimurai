@@ -2,7 +2,7 @@ require 'thor'
 
 module Kimurai
   class CLI < Thor
-    # ToDo: move generators to separate class
+    # ToDo: move generators to a separate class
     include Thor::Actions
 
     def self.source_root

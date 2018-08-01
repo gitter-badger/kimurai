@@ -8,8 +8,8 @@ module Kimurai
       @jobs = parallel_jobs
       @crawlers = Base.descendants.select { |crawler_class| crawler_class.name != nil }
 
-      if timezone = Kimurai.configuration.timezone
-        Kimurai.timezone = timezone
+      if time_zone = Kimurai.configuration.time_zone
+        Kimurai.time_zone = time_zone
       end
 
       require 'kimurai/stats' if Kimurai.configuration.stats

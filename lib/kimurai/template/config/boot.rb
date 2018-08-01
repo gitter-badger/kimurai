@@ -24,6 +24,3 @@ require_all "crawlers"
 
 # require kimurai configuration
 require_relative 'application'
-
-# you can create `environments` folder and put there specific env configurations
-# for Kimurai (in additional to main configuration located in config/application.rb)

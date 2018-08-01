@@ -100,8 +100,8 @@ module Kimurai
       Kimurai.current_crawler = name
       Capybara::Session.logger = Log.instance
 
-      if timezone = Kimurai.configuration.timezone
-        Kimurai.timezone = timezone
+      if time_zone = Kimurai.configuration.time_zone
+        Kimurai.time_zone = time_zone
       end
 
       enable_stats if Kimurai.configuration.stats
@@ -113,17 +113,17 @@ module Kimurai
         klass
       end
 
-      open_crawler if self.respond_to? :open_crawler
-      at_exit { close_crawler if self.respond_to? :close_crawler }
+      at_start if self.respond_to? :at_start
+      at_exit { at_stop if self.respond_to? :at_stop }
 
-      pipelines.each { |pipeline| pipeline.open_crawler if pipeline.respond_to? :open_crawler }
+      pipelines.each { |pipeline| pipeline.at_start if pipeline.respond_to? :at_start }
       at_exit do
         pipelines.each do |pipeline|
-          pipeline.close_crawler if pipeline.respond_to? :close_crawler
+          pipeline.at_stop if pipeline.respond_to? :at_stop
         rescue => e
           # ? # or create separate at_exit for each pipeline
           Log.error "Crawler: there is an error in pipeline while trying to call " \
-            ".close_crawler method: #{e.class}, #{e.message}"
+            ".at_stop method: #{e.class}, #{e.message}"
         end
       end
     end
@@ -163,12 +163,12 @@ module Kimurai
 
     ###
 
-    # def self.open_crawler
-    #   puts "From open crawler"
+    # def self.at_start
+    #   puts "From at_start crawler callback"
     # end
 
-    # def self.close_crawler
-    #   puts "From close crawler"
+    # def self.at_stop
+    #   puts "From at_stop crawler callback"
     # end
 
     ###

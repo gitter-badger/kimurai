@@ -8,12 +8,8 @@
 /tmp/*
 !/tmp/.keep
 
-/db/*.sqlite3
-/db/*.sqlite3-journal
-/db/*.json
-/db/*.csv
-/db/*.yaml
-/db/*.yml
+/db/*
+!/db/.keep
 
 .byebug_history
 *.swp

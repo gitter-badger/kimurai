@@ -12,6 +12,7 @@ module Kimurai
       directory "template", project_name
       inside(project_name) do
         run "bundle install"
+        run "git init"
       end
     end
 

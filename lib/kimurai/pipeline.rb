@@ -1,7 +1,8 @@
+require_relative 'base_helper'
+
 module Kimurai
   class Pipeline
     class DropItemError < StandardError; end
-
     class << self
       attr_accessor :crawler
 
@@ -9,6 +10,8 @@ module Kimurai
         self.to_s.sub(/.*?::/, "").underscore.to_sym
       end
     end
+
+    include BaseHelper
 
     def name
       self.class.to_s.sub(/.*?::/, "").underscore.to_sym

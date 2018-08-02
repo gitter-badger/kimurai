@@ -2,7 +2,6 @@ require 'json'
 require 'concurrent'
 require 'uri'
 require 'socket'
-
 require_relative 'base_helper'
 
 module Kimurai

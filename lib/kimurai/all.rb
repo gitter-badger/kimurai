@@ -13,5 +13,6 @@ require_relative 'capybara/session'
 
 require_relative 'log'
 require_relative 'session_builder'
+require_relative 'simple_saver'
 require_relative 'pipeline'
 require_relative 'base'

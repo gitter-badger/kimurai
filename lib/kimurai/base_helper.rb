@@ -18,5 +18,11 @@ module Kimurai
     def normalize_url(url, base:)
       escape_url(absolute_url(url, base: base))
     end
+
+    ###
+
+    def save_to(path, item, format:, position: false)
+      SimpleSaver.save(item, path: path, format: format, position: position)
+    end
   end
 end

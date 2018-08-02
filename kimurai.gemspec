@@ -37,7 +37,6 @@ Gem::Specification.new do |spec|
   spec.add_dependency "pmap"
 
   spec.add_dependency "sequel"
-  spec.add_dependency "sqlite3"
   spec.add_dependency "sinatra-contrib"
 
   spec.add_dependency "whenever"

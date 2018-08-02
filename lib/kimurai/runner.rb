@@ -35,7 +35,6 @@ module Kimurai
       at_exit do
         # prevent queue to process new intems while executing at_exit body
         Thread.list.each { |t| t.kill if t != Thread.main }
-
         # kill current running crawlers
         running_pids.each { |pid| Process.kill("INT", pid) }
 
@@ -62,15 +61,13 @@ module Kimurai
       end
 
       crawlers.peach_with_index(jobs) do |crawler_class, i|
-        # ToDo: add Thread.current.abort_on_exception = true and check if
-        # it works, and we don't need `Thread.list.each { |t| t.kill if t != Thread.main }` (see above)
         crawler_name = crawler_class.name
-
         puts "> Runner: started crawler: #{crawler_name}, index: #{i}"
+
         pid = spawn("bundle", "exec", "kimurai", "start", crawler_name, [:out, :err] => "log/#{crawler_name}.log")
         running_pids << pid
-
         Process.wait pid
+
         running_pids.delete(pid)
         puts "< Runner: stopped crawler: #{crawler_name}, index: #{i}"
       end

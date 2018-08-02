@@ -12,6 +12,12 @@ gem 'require_all'
 # dotenv
 gem 'dotenv'
 
+# For stats database you can use sqlite, postgres or mysql. Uncomment
+# prefered gem and run bundle install before provide stats_database_url in config/application.rb
+# gem 'sqlite3'
+# gem 'pg'
+# gem 'mysql2'
+
 group :development do
   gem 'byebug'
   gem 'pry'

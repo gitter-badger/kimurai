@@ -149,8 +149,11 @@ module Kimurai
       check_for_project
 
       require './config/boot'
-      require 'kimurai/dashboard/app'
+      unless Kimurai.configuration.stats || Kimurai.configuration.stats_database_url
+        raise "Please set stats and stats_database_url in config/application.rb to run dashboard"
+      end
 
+      require 'kimurai/dashboard/app'
       Kimurai::Dashboard::App.run!
     end
 

@@ -1,10 +1,9 @@
 require 'sequel'
-require 'sqlite3'
 require 'json'
 
 module Kimurai
   class Stats
-    DB = Sequel.connect(Kimurai.configuration.stats_database)
+    DB = Sequel.connect(Kimurai.configuration.stats_database_url)
 
     DB.create_table?(:sessions) do
       primary_key :id, type: :integer, auto_increment: false

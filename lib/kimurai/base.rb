@@ -161,16 +161,6 @@ module Kimurai
 
     ###
 
-    # def self.at_start
-    #   puts "From at_start crawler callback"
-    # end
-
-    # def self.at_stop
-    #   puts "From at_stop crawler callback"
-    # end
-
-    ###
-
     def initialize(driver: self.class.driver, config: {})
       @driver = driver
       @config = self.class.config.deep_merge(config)
@@ -178,8 +168,7 @@ module Kimurai
         .map { |pipeline| [pipeline, pipeline.to_s.classify.constantize.new] }.to_h
     end
 
-    def request_to(handler, type = :get, url:, data: {}, delay: nil)
-      # todo: add post request option for mechanize
+    def request_to(handler, delay = nil, url:, data: {})
       request_data = { url: url, data: data }
 
       delay ? browser.visit(url, delay: delay) : browser.visit(url)
@@ -206,8 +195,7 @@ module Kimurai
 
       # you can provide custom options for each pipeline, and then access these
       # options inside of pipeline's method #process_item. Use this option
-      # if you need custom behaviour for pipeline for some crawler
-      # example:
+      # if you need custom behaviour for pipeline for some crawler. Example:
       # send_item item, validator: { skip_uniq_checking: true }
       @pipelines.each do |name, pipeline|
         item =
@@ -238,16 +226,8 @@ module Kimurai
       Log.error "Pipeline: full error: #{e.full_message}"
     end
 
-    # http://phrogz.net/programmingruby/tut_threads.html
-    # https://www.sitepoint.com/threads-ruby/
-    # upd try to use https://github.com/grosser/parallel instead,
-    # add optional map (map_in_parallel() to return results from threads)
-    # to do, add optional post type here too
-    # to do, add note about to include driver options, or use a default ones,
-    # upd it's already included, see initialize and def page
-    # New:
-    def in_parallel(handler, threads_count, requests:, sort: true, driver: self.class.driver, config: {})
-      parts = sort ? requests.in_sorted_groups(threads_count, false) : requests.in_groups(threads_count, false)
+    def in_parallel(handler, threads_count, requests:, driver: self.class.driver, config: {})
+      parts = requests.in_sorted_groups(threads_count, false)
       requests_count = requests.size
 
       threads = []
@@ -265,13 +245,13 @@ module Kimurai
           end
         rescue => e
           Log.fatal "Crawler: in_parallel: there is an exception from thread: " \
-            "#{Thread.current.object_id}: #{e.inspect}" # ?
+            "#{Thread.current.object_id}: #{e.inspect}"
           raise e
         ensure
           crawler.browser.destroy_driver!
         end
 
-        sleep 1 # add delay between starting threads
+        sleep 1
       end
 
       threads.each(&:join)

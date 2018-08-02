@@ -2,8 +2,8 @@ module Capybara
   class Session
     attr_reader :driver_type, :driver_pid, :driver_port
 
-    # as you can see, driver don't created at the same time with session
-    # driver created later, at the first call of #driver method. For example
+    # Driver don't create at the same time with session, it's created later,
+    # at the first call of #driver method. For example
     # at the first #visit (because visit it's a wrapper for driver.visit)
     # And this is exact reason why driver_pid will be nil, until driver
     # will be created (`#create_session_driver`)
@@ -24,9 +24,11 @@ module Capybara
     def recreate_driver!
       if driver_type == :poltergeist
         @driver.browser.restart
+        @driver_pid, @driver_port = get_driver_pid_port(@driver)
         logger.info "Session: session driver has been restarted: " \
           "driver name: #{mode}, pid: #{@driver_pid}, port: #{@driver_port}"
-        @driver_pid, @driver_port = get_driver_pid_port(@driver)
+
+        @driver
       else
         destroy_driver!
         @driver = create_session_driver
@@ -75,7 +77,6 @@ module Capybara
       when :poltergeist
         [driver.browser.client.pid, driver.browser.client.server.port]
       when :selenium
-        # webdriver_port = driver.browser.send(:bridge).http.instance_variable_get("@http").port
         webdriver_port = driver.browser.send(:bridge).instance_variable_get("@http")
           .instance_variable_get("@server_url").port
         webdriver_pid = `lsof -i tcp:#{webdriver_port} -t`&.strip&.to_i

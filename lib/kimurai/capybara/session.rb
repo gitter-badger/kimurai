@@ -9,8 +9,6 @@ require_relative 'session/cookies'
 require_relative 'session/headers'
 require_relative 'session/proxy'
 
-# to do: check about methods namespace
-
 module Capybara
   class Session
     RETRY_REQUEST_ERRORS = [Net::ReadTimeout].freeze
@@ -47,8 +45,6 @@ module Capybara
       }
     end
 
-    # ToDo: maybe merge #post_request to this method. Something like
-    # visit(visit_url, method: :get, delay:)
     alias_method :original_visit, :visit
     def visit(visit_uri, delay: options[:before_request][:delay], skip_request_options: false, max_retries: 3)
       process_delay(delay) if delay
@@ -67,14 +63,14 @@ module Capybara
       rescue *RETRY_REQUEST_ERRORS => e
         error = e.inspect
         self.class.stats[:requests_errors][error] += 1
-        logger.error "Session: request visit error: #{error} (url: #{visit_uri})"
+        logger.error "Session: request visit error: #{error}, url: #{visit_uri}"
 
         if (retries += 1) < max_retries
           logger.info "Session: sleep #{(sleep_interval += 10)} seconds and process " \
-            "another retry (#{retries}) to the  url #{visit_uri}"
+            "retry № #{retries} to the url: #{visit_uri}"
           sleep(sleep_interval) and retry
         else
-          logger.error "Session: All retries (#{retries}) to the url #{visit_uri} is gone, no luck"
+          logger.error "Session: All retries (#{retries}) to the url: #{visit_uri} are gone"
           raise e
         end
       else
@@ -118,7 +114,6 @@ module Capybara
     # to do: set restriction to mechanize
     # notice: not safe with #recreate_driver! (any interactions with more
     # than one window)
-    # ToDo: add description how to use this method
     def within_new_window_by(action: nil, url: nil)
       case
       when action
@@ -150,7 +145,7 @@ module Capybara
       when :selenium
         current_window.resize_to(width, height)
       when :mechanize
-        logger.error "Session: mechanize driver don't support this method. Skipped."
+        logger.debug "Session: mechanize driver don't support resize, skip"
       end
     end
 
@@ -164,14 +159,12 @@ module Capybara
       logger.info "Stats visits: requests: " \
         "#{self.class.stats[:requests]}, responses: #{self.class.stats[:responses]}"
 
-      memory = current_memory
-      stats[:memory] << memory
-      logger.debug "Session: current_memory: #{memory}"
+      logger.debug "Session: current_memory: #{current_memory}"
     end
 
     def process_delay(delay)
       interval = (delay.class == Range ? rand(delay) : delay)
-      logger.debug "Session: sleeping (#{interval}) before request..."
+      logger.debug "Session: sleeping: #{interval} before request..."
 
       sleep interval
     end
@@ -184,7 +177,7 @@ module Capybara
         if memory > limit
           url = current_url
 
-          logger.warn "Session: limit (#{limit}) of current_memory (#{memory}) is exceeded"
+          logger.warn "Session: limit: #{limit} of current_memory: #{memory} is exceeded"
           recreate_driver!
 
           if driver_type == :selenium && options[:before_request][:clear_and_set_cookies]

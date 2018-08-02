@@ -24,8 +24,8 @@ module Kimurai
         session_id: ENV["SESSION_ID"]&.to_i,
         visits: Capybara::Session.stats,
         items: {
+          sent: 0,
           processed: 0,
-          saved: 0,
           drop_errors: Hash.new(0)
         },
         error: nil,
@@ -93,7 +93,7 @@ module Kimurai
     ###
 
     def self.preload!
-      # init info
+      # init run_info
       run_info
 
       # set settings
@@ -121,7 +121,6 @@ module Kimurai
         pipelines.each do |pipeline|
           pipeline.at_stop if pipeline.respond_to? :at_stop
         rescue => e
-          # ? # or create separate at_exit for each pipeline
           Log.error "Crawler: there is an error in pipeline while trying to call " \
             ".at_stop method: #{e.class}, #{e.message}"
         end
@@ -204,7 +203,7 @@ module Kimurai
 
     def send_item(item, options = {})
       Log.debug "Pipeline: starting processing item through #{@pipelines.size} #{'pipeline'.pluralize(@pipelines.size)}..."
-      self.class.run_info[:items][:processed] += 1
+      self.class.run_info[:items][:sent] += 1
 
       # you can provide custom options for each pipeline, and then access these
       # options inside of pipeline's method #process_item. Use this option
@@ -223,17 +222,17 @@ module Kimurai
       register_drop_error(e, item)
       false
     else
-      self.class.run_info[:items][:saved] += 1
+      self.class.run_info[:items][:processed] += 1
       Log.info "Pipeline: processed item: #{JSON.generate(item)}"
 
       true
     ensure
-      Log.info "Stats items: sent: #{self.class.run_info[:items][:processed]}, " \
-        "processed: #{self.class.run_info[:items][:saved]}"
+      Log.info "Stats items: sent: #{self.class.run_info[:items][:sent]}, " \
+        "processed: #{self.class.run_info[:items][:processed]}"
     end
 
-    def register_drop_error(error, item)
-      error = error.inspect
+    def register_drop_error(e, item)
+      error = e.inspect
       self.class.run_info[:items][:drop_errors][error] += 1
 
       Log.error "Pipeline: dropped item: #{error}: #{item}"
@@ -266,19 +265,19 @@ module Kimurai
             crawler.request_to(handler, request_data)
           end
         rescue => e
-          Log.fatal "Crawler: in_parallel: there is an execption from thread " \
+          Log.fatal "Crawler: in_parallel: there is an exception from thread: " \
             "#{Thread.current.object_id}: #{e.inspect}" # ?
           raise e
         ensure
           crawler.browser.destroy_driver!
         end
 
-        sleep 0.5 # add delay between starting threads
+        sleep 1 # add delay between starting threads
       end
 
       threads.each(&:join)
       Log.info "Crawler: in_parallel: stopped processing #{requests_count} " \
-        "requests within #{threads_count} threads (total time: #{(Time.now - start_time).duration})"
+        "requests within #{threads_count} threads, total time: #{(Time.now - start_time).duration}"
     end
   end
 end

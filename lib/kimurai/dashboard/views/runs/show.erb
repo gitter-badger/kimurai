@@ -54,8 +54,12 @@
           </td>
         </tr>
         <tr>
-          <th>Server ip</th>
-          <td><%= @run.server["ip"] %></td>
+          <th>Server hostname</th>
+          <td><%= @run.server["hostname"] %></td>
+        </tr>
+        <tr>
+          <th>Server IPV4</th>
+          <td><%= @run.server["ipv4"] %></td>
         </tr>
         <tr>
           <th>Process pid</th>
@@ -99,19 +103,29 @@
     <table class="table table-bordered table-sm">
       <tbody>
         <tr>
-          <th>Processed</th>
-          <td><%= @run.items["processed"] %></td>
+          <th>Sent</th>
+          <td>
+            <%= @run.items["sent"] %>
+            <% if difference %>
+              <i><%= format_difference(difference[:items][:sent][:previous], difference[:items][:sent][:difference], difference[:previous_run_id]) %></i>
+            <% end %>
+          </td>
         </tr>
         <tr>
-          <th>Saved</th>
-          <td><%= @run.items["saved"] %></td>
+          <th>Processed</th>
+          <td>
+            <%= @run.items["processed"] %>
+            <% if difference %>
+              <i><%= format_difference(difference[:items][:processed][:previous], difference[:items][:processed][:difference], difference[:previous_run_id]) %></i>
+            <% end %>
+          </td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <% if @run.visits["requests_errors"].any? %>
-    <%= erb :'runs/_errors', locals: { errors: @run.visits["requests_errors"] } %>
+  <% if @run.items["drop_errors"].any? %>
+    <%= erb :'runs/_errors', locals: { errors: @run.items["drop_errors"] } %>
   <% end %>
 
 </div>

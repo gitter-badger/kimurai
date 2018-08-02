@@ -3,7 +3,7 @@ require 'sinatra/respond_with'
 require 'sinatra/json'
 require 'sinatra/namespace'
 require 'sinatra/reloader'
-require "sinatra/streaming"
+require 'sinatra/streaming'
 
 require_relative '../stats'
 require_relative 'helpers'
@@ -29,7 +29,6 @@ module Kimurai
 
       helpers do
         include Helpers
-
         include Rack::Utils
         alias_method :h, :escape_html
       end
@@ -39,7 +38,7 @@ module Kimurai
       ###
 
       get "/" do
-        redirect "/sessions"
+        redirect "/crawlers"
       end
 
       namespace "/sessions" do
@@ -48,8 +47,7 @@ module Kimurai
 
           respond_to do |f|
             f.html { erb :'sessions/index' }
-            # ToDo: fix problem conflict with activesupport json serializator
-            f.json { @sessions.to_json(include: [:in_quenue, :total_time]) }
+            # f.json { @sessions.to_json(include: [:in_quenue, :total_time]) }
           end
         end
 
@@ -59,7 +57,7 @@ module Kimurai
 
           respond_to do |f|
             f.html { erb :'sessions/show' }
-            f.json { @session.to_json(include: [:in_quenue, :total_time]) }
+            # f.json { @session.to_json(include: [:in_quenue, :total_time]) }
           end
         end
       end
@@ -75,7 +73,7 @@ module Kimurai
 
           respond_to do |f|
             f.html { erb :'runs/index', locals: { filters: filters }}
-            f.json { @runs.to_json }
+            # f.json { @runs.to_json }
           end
         end
 
@@ -83,7 +81,6 @@ module Kimurai
           @run = Stats::Run.find(id: params[:id].to_i)
           halt "Error, can't find session!" unless @run
 
-          # byebug
           respond_to do |f|
             f.html {
               erb :'runs/show', locals: { difference: @run.difference_between_previous_run }
@@ -112,7 +109,7 @@ module Kimurai
 
           respond_to do |f|
             f.html { erb :'crawlers/index' }
-            f.json { @crawlers.to_json }
+            # f.json { @crawlers.to_json }
           end
         end
 
@@ -128,7 +125,7 @@ module Kimurai
 
           respond_to do |f|
             f.html { erb :'crawlers/show' }
-            f.json { @crawler.to_json }
+            # f.json { @crawler.to_json }
           end
         end
       end

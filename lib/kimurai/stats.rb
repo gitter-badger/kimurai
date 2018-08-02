@@ -116,8 +116,16 @@ module Kimurai
             }
           },
           items: {
-            processed: calculate_difference(items["processed"], previous_run.items["processed"]),
-            saved: calculate_difference(items["saved"], previous_run.items["saved"])
+            sent: {
+              current: items["sent"],
+              previous: previous_run.items["sent"],
+              difference: calculate_difference(items["sent"], previous_run.items["sent"])
+            },
+            processed: {
+              current: items["processed"],
+              previous: previous_run.items["processed"],
+              difference: calculate_difference(items["processed"], previous_run.items["processed"])
+            }
           },
           previous_run_id: previous_run.id
         }
@@ -128,6 +136,8 @@ module Kimurai
       def calculate_difference(current, previous)
         return if current == 0 || previous == 0
         (((current - previous).to_r / previous) * 100).to_f.round(1)
+      # rescue => e
+      #   binding.pry
       end
     end
 

@@ -46,8 +46,8 @@ module Capybara
       driver.session = self if driver.respond_to?(:session=)
 
       # added
+      driver.visited = false
       @driver_type = parse_driver_type(driver.class)
-      # added
       @driver_pid, @driver_port = get_driver_pid_port(driver)
       logger.info "Session: a new session driver has been created: " \
         "driver name: #{mode}, pid: #{@driver_pid}, port: #{@driver_port}"

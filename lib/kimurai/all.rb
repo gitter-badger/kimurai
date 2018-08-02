@@ -9,6 +9,7 @@ require_relative 'core_ext/string'
 require_relative 'core_ext/array'
 
 require_relative 'capybara/default_configuration'
+require_relative 'capybara/driver'
 require_relative 'capybara/session'
 
 require_relative 'log'

@@ -226,22 +226,25 @@ module Kimurai
       Log.error "Pipeline: full error: #{e.full_message}"
     end
 
-    def in_parallel(handler, threads_count, requests:, driver: self.class.driver, config: {})
-      parts = requests.in_sorted_groups(threads_count, false)
-      requests_count = requests.size
+    def in_parallel(handler, threads_count, urls:, data: {}, driver: self.class.driver, config: {})
+      parts = urls.in_sorted_groups(threads_count, false)
+      urls_count = urls.size
 
       threads = []
       start_time = Time.now
-      Log.info "Crawler: in_parallel: starting processing #{requests_count} requests within #{threads_count} threads"
+      Log.info "Crawler: in_parallel: starting processing #{urls_count} urls within #{threads_count} threads"
 
       parts.each do |part|
         threads << Thread.new(part) do |part|
-          # stop crawler's process if there is an exeption in any thread
           Thread.current.abort_on_exception = true
 
           crawler = self.class.new(driver: driver, config: config)
-          part.each do |request_data|
-            crawler.request_to(handler, request_data)
+          part.each do |url_data|
+            if url_data.class == Hash
+              crawler.request_to(handler, url_data)
+            else
+              crawler.request_to(handler, url: url_data, data: data)
+            end
           end
         rescue => e
           Log.fatal "Crawler: in_parallel: there is an exception from thread: " \
@@ -255,8 +258,8 @@ module Kimurai
       end
 
       threads.each(&:join)
-      Log.info "Crawler: in_parallel: stopped processing #{requests_count} " \
-        "requests within #{threads_count} threads, total time: #{(Time.now - start_time).duration}"
+      Log.info "Crawler: in_parallel: stopped processing #{urls_count} " \
+        "urls within #{threads_count} threads, total time: #{(Time.now - start_time).duration}"
     end
   end
 end

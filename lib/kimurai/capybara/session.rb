@@ -76,6 +76,10 @@ module Capybara
       else
         self.class.stats[:responses] += 1
         stats[:responses] += 1
+
+        @driver.visited = true unless @driver.visited
+        @last_visited_url = visit_uri
+
         logger.info "Session: finished get request to: #{visit_uri}"
       end
     ensure
@@ -159,7 +163,7 @@ module Capybara
       logger.info "Stats visits: requests: " \
         "#{self.class.stats[:requests]}, responses: #{self.class.stats[:responses]}"
 
-      logger.debug "Session: current_memory: #{current_memory}"
+      logger.debug "Session: current_memory: #{current_memory}" unless driver_type == :mechanize
     end
 
     def process_delay(delay)
@@ -170,21 +174,12 @@ module Capybara
     end
 
     def check_request_options
-      # todo add checkings for a driver type
+
       if limit = options[:recreate_if_memory_more_than]
         memory = current_memory
-
         if memory > limit
-          url = current_url
-
           logger.warn "Session: limit: #{limit} of current_memory: #{memory} is exceeded"
           recreate_driver!
-
-          if driver_type == :selenium && options[:before_request][:clear_and_set_cookies]
-            logger.debug "Session: visiting previous url after recreate_driver " \
-              "(for selenium), because clear_and_set_cookies before_request enabled"
-            visit(url, skip_request_options: true)
-          end
         end
       end
 
@@ -195,8 +190,14 @@ module Capybara
 
       if cookies = options[:before_request][:clear_and_set_cookies]
         clear_cookies!
-        set_cookies(cookies)
 
+        if driver_type == :selenium && @driver.visited == false && @last_visited_url
+          logger.debug "Session: visiting last_processed_url before setting cookies, " \
+            "because current_url is empty (selenium)"
+          visit(@last_visited_url, skip_request_options: true)
+        end
+
+        set_cookies(cookies)
         logger.debug "Session: cleared and set default cookies before request"
       end
 

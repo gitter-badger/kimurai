@@ -1,33 +1,26 @@
 require 'thor'
+require_relative 'generator'
 
 module Kimurai
   class CLI < Thor
-    # ToDo: move generators to a separate class
-    include Thor::Actions
-
-    def self.source_root
-      File.dirname(__FILE__)
-    end
-
     desc "new", "Create new crawler project"
     def new(project_name)
-      directory "template", project_name
-      inside(project_name) do
-        run "bundle install"
-      end
-
+      Generator.new.generate_project(project_name)
       puts "New kimurai project has been successfully created!"
     end
 
-    desc "generate", "Generator, available types: crawler"
-    option :start_url, type: :string, banner: "Start url for a new crawler crawler"
+    desc "generate", "Generator, available types: crawler, schedule"
+    option :start_url, type: :string, banner: "Start url for a new crawler"
     def generate(generator_type, *args)
       case generator_type
       when "crawler"
         check_for_project
-        generate_crawler(args)
+
+        crawler_name = args.shift
+        raise "Provide crawler name to generate a crawler" if crawler_name.nil? || crawler_name.empty?
+        Generator.new.generate_crawler(crawler_name)
       when "schedule"
-        copy_file "template/config/schedule.rb", "./schedule.rb"
+        Generator.new.generate_schedule
       else
         raise "Don't know generator type: #{generator_type}"
       end
@@ -124,7 +117,6 @@ module Kimurai
     option :driver, aliases: :d, type: :string, banner: "Driver to default session"
     def console(crawler_name = nil)
       check_for_project
-
       require './config/boot'
 
       klass =
@@ -133,7 +125,6 @@ module Kimurai
         else
           ApplicationCrawler
         end
-
       klass.preload!
 
       if driver = options["driver"]&.to_sym
@@ -143,7 +134,6 @@ module Kimurai
       end
     end
 
-    # In config there should be enabled stats and database uri
     desc "dashboard", "Run web dashboard server"
     def dashboard
       check_for_project
@@ -158,30 +148,6 @@ module Kimurai
     end
 
     private
-
-    def generate_crawler(args)
-      crawler_name = args.shift
-      crawler_path = "crawlers/#{crawler_name}.rb"
-      raise "Crawler #{crawler_path} already exists" if File.exists? crawler_path
-
-      create_file crawler_path do
-        <<~RUBY
-          class #{to_crawler_class(crawler_name)} < ApplicationCrawler
-            @name = "#{crawler_name}"
-            @config = {}
-
-            def parse(response, url:, data: {})
-            end
-          end
-        RUBY
-      end
-
-      if start_url = options["start_url"]
-        insert_into_file(crawler_path, after: %Q{@name = "#{crawler_name}"\n}) do
-          %Q{  @start_urls = ["#{start_url}"]\n}
-        end
-      end
-    end
 
     def get_ansible_command(user_host_string, playbook:, vars: {})
       require 'cliver'
@@ -246,13 +212,6 @@ module Kimurai
         raise "There is no such crawler in the project " \
           "(type `$ bundle exec kimurai list` to list all project crawlers)"
       end
-    end
-
-    def to_crawler_class(string)
-      string.sub(/^./) { $&.capitalize }
-        .gsub(/(?:_|(\/))([a-z\d]*)/) { "#{$1}#{$2.capitalize}" }
-        .gsub(/(?:-|(\/))([a-z\d]*)/) { "Dash#{$2.capitalize}" }
-        .gsub(/(?:\.|(\/))([a-z\d]*)/) { "#{$1}#{$2.capitalize}" }
     end
   end
 end

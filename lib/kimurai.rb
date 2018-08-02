@@ -21,7 +21,6 @@ module Kimurai
       Pathname.new('..').expand_path(File.dirname(__FILE__))
     end
 
-    # current crawler
     def current_crawler
       ENV["CURRENT_CRAWLER"]
     end

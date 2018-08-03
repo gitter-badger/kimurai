@@ -38,6 +38,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "sequel"
   spec.add_dependency "sinatra-contrib"
+  spec.add_dependency "pagy"
 
   spec.add_dependency "whenever"
   spec.add_dependency "rbcat"

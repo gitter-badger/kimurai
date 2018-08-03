@@ -1,6 +1,11 @@
+require 'pagy'
+require 'pagy/extras/bootstrap'
+
 module Kimurai
   module Dashboard
     module Helpers
+      include Pagy::Frontend
+
       def to_hash(object)
         object.to_hash.merge(object.deserialized_values)
       end

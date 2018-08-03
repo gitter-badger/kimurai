@@ -34,5 +34,7 @@
         </tbody>
       </table>
     </div>
+
+    <%= pagy_nav_bootstrap(@pagy) if @pagy && @pagy.pages > 1 %>
   </div>
 </div>

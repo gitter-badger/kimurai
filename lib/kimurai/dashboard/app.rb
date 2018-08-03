@@ -4,6 +4,7 @@ require 'sinatra/json'
 require 'sinatra/namespace'
 require 'sinatra/reloader'
 require 'sinatra/streaming'
+require 'pagy'
 
 require_relative '../stats'
 require_relative 'helpers'
@@ -11,6 +12,8 @@ require_relative 'helpers'
 module Kimurai
   module Dashboard
     class App < Sinatra::Base
+      include Pagy::Backend
+
       enable :logging
       set :environment, Kimurai.env.to_sym
 
@@ -44,10 +47,10 @@ module Kimurai
       namespace "/sessions" do
         get do
           @sessions = Stats::Session.reverse_order(:id)
+          @pagy, @sessions = pagy(@sessions) unless @sessions.count.eql? 0
 
           respond_to do |f|
             f.html { erb :'sessions/index' }
-            # f.json { @sessions.to_json(include: [:in_quenue, :total_time]) }
           end
         end
 
@@ -57,7 +60,6 @@ module Kimurai
 
           respond_to do |f|
             f.html { erb :'sessions/show' }
-            # f.json { @session.to_json(include: [:in_quenue, :total_time]) }
           end
         end
       end
@@ -71,9 +73,9 @@ module Kimurai
             @runs = @runs.send(filter_name, value)
           end
 
+          @pagy, @runs = pagy(@runs) unless @runs.count.eql? 0
           respond_to do |f|
             f.html { erb :'runs/index', locals: { filters: filters }}
-            # f.json { @runs.to_json }
           end
         end
 
@@ -82,9 +84,7 @@ module Kimurai
           halt "Error, can't find session!" unless @run
 
           respond_to do |f|
-            f.html {
-              erb :'runs/show', locals: { difference: @run.difference_between_previous_run }
-            }
+            f.html { erb :'runs/show', locals: { difference: @run.difference_between_previous_run }}
           end
         end
 
@@ -106,10 +106,10 @@ module Kimurai
       namespace "/crawlers" do
         get do
           @crawlers = Stats::Crawler
+          @pagy, @crawlers = pagy(@crawlers) unless @crawlers.count.eql? 0
 
           respond_to do |f|
             f.html { erb :'crawlers/index' }
-            # f.json { @crawlers.to_json }
           end
         end
 
@@ -125,9 +125,19 @@ module Kimurai
 
           respond_to do |f|
             f.html { erb :'crawlers/show' }
-            # f.json { @crawler.to_json }
           end
         end
+      end
+
+      private
+
+      def pagy_get_vars(collection, vars)
+        {
+          count: collection.count,
+          page_param: "page",
+          page: params["page"],
+          items: 25
+        }
       end
     end
   end

@@ -5,5 +5,7 @@
     <h1>Runs</h1>
     <%= render_filters(filters) if filters.any? %>
     <%= erb :'runs/_table', locals: { runs: @runs } %>
+
+    <%= pagy_nav_bootstrap(@pagy) if @pagy && @pagy.pages > 1 %>
   </div>
 </div>

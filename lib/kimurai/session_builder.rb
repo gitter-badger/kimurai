@@ -99,7 +99,9 @@ module Kimurai
         when :selenium_firefox
           Capybara::Selenium::Driver.new(app, browser: :firefox, options: @driver_options)
         when :selenium_chrome
-          Capybara::Selenium::Driver.new(app, browser: :chrome, options: @driver_options)
+          Capybara::Selenium::Driver.new(app, browser: :chrome,
+                                              options: @driver_options,
+                                              driver_path: "/usr/local/bin/chromedriver")
         when :poltergeist_phantomjs
           Capybara::Poltergeist::Driver.new(app, @driver_options)
         when :mechanize

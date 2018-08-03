@@ -1,6 +1,6 @@
 Kimurai.configure do |config|
   # Default logger has colored mode in development.
-  # If you would like to disable it, set setting to false.
+  # If you would like to disable it, set `colorize_logger` to false.
   # config.colorize_logger = false
 
   # custom logger (you can use logstash for example with multiple sources)
@@ -31,7 +31,7 @@ Kimurai.configure do |config|
 
   # Provide stats_database_url to enable stats and save info about crawlers runs and sessions to
   # a database. To check stats run dashboard: `$ bundle exec kimurai dashboard`.
-  # Check format for a database url: https://sequel.jeremyevans.net/rdoc/files/doc/opening_databases_rdoc.html
+  # Format for a database url: https://sequel.jeremyevans.net/rdoc/files/doc/opening_databases_rdoc.html
   # You can use sqlite, postgres or mysql database (check Gemfile and uncomment required gem).
   # config.stats_database_url = "sqlite://db/crawlers_runs_#{Kimurai.env}.sqlite3"
 

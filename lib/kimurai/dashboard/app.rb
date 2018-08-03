@@ -14,29 +14,31 @@ module Kimurai
     class App < Sinatra::Base
       include Pagy::Backend
 
+      register Sinatra::RespondWith, Sinatra::Namespace
       enable :logging
       set :environment, Kimurai.env.to_sym
-
-      register Sinatra::RespondWith,
-               Sinatra::Namespace
+      if port = Kimurai.configuration.dashboard&.dig(:port)
+        set :port, port
+      end
 
       configure :development do
-        register Sinatra::Reloader
-
         require 'byebug'
         require 'pry'
+        register Sinatra::Reloader
       end
 
-      configure :production do
-      end
-
+      helpers Sinatra::Streaming
       helpers do
         include Helpers
         include Rack::Utils
         alias_method :h, :escape_html
       end
 
-      helpers Sinatra::Streaming
+      if auth = Kimurai.configuration.dashboard&.dig(:basic_auth)
+        use Rack::Auth::Basic, "Protected Area" do |username, password|
+          username == auth[:username] && password == auth[:password]
+        end
+      end
 
       ###
 

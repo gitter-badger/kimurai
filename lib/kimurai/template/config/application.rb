@@ -34,6 +34,12 @@ Kimurai.configure do |config|
 
   # set database url (sequel scheme) for stats (required if config.stats set to true)
   # config.stats_database_url = "sqlite://db/crawlers_runs_#{Kimurai.env}.sqlite3"
+
+  # Optional settings for a dashboard
+  # config.dashboard = {
+  #   port: 3001,
+  #   basic_auth: { username: "admin", password: "123456" }
+  # }
 end
 
 # Note: you can create `config/environments` folder and put there specific env configurations

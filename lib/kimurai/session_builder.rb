@@ -193,11 +193,15 @@ module Kimurai
     def check_headless_mode_for_selenium
       if ENV["HEADLESS"] != "false" && driver_type == :selenium
         if @config[:headless_mode] == :virtual_display
-          unless self.class.virtual_display
-            require 'headless'
-
-            self.class.virtual_display = Headless.new(reuse: true, destroy_at_exit: false)
-            self.class.virtual_display.start
+          if Gem::Platform.local.os == "linux"
+            unless self.class.virtual_display
+              require 'headless'
+              self.class.virtual_display = Headless.new(reuse: true, destroy_at_exit: false)
+              self.class.virtual_display.start
+            end
+          else
+            Log.debug "Session builder: `virtual_display` headless mode works only " \
+              "on Linux platform, skip. Browser will run in normal mode. Set `native` mode instead."
           end
 
           Log.debug "Session builder: enabled virtual_display headless mode for #{driver_name}"

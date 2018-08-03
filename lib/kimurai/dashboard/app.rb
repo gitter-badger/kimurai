@@ -123,6 +123,9 @@ module Kimurai
 
           halt "Error, can't find crawler!" unless @crawler
 
+          @crawler_runs = @crawler.runs_dataset.reverse_order(:id)
+          @pagy, @crawler_runs = pagy(@crawler_runs, items: 15) unless @crawler_runs.count.eql? 0
+
           respond_to do |f|
             f.html { erb :'crawlers/show' }
           end
@@ -136,7 +139,7 @@ module Kimurai
           count: collection.count,
           page_param: "page",
           page: params["page"],
-          items: 25
+          items: vars[:items] || 25
         }
       end
     end

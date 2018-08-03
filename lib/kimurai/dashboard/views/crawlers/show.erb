@@ -39,6 +39,8 @@
 
   <div class="col-lg-12">
     <h2>Runs</h2>
-    <%= erb :'runs/_table', locals: { runs: @crawler.runs.reverse } %>
+    <%= erb :'runs/_table', locals: { runs: @crawler_runs } %>
+
+    <%= pagy_nav_bootstrap(@pagy) if @pagy && @pagy.pages > 1 %>
   </div>
 </div>

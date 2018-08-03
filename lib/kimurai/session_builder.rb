@@ -80,7 +80,8 @@ module Kimurai
 
       # other
       check_cookies
-      check_recreate_if_memory_for_selenium_poltergeist
+      check_recreate_driver_if_requests_for_selenium_poltergeist
+      check_recreate_driver_if_memory_for_selenium_poltergeist
       check_before_request_clear_cookies
       check_before_request_clear_and_set_cookies
       check_before_request_change_user_agent_for_mechanize_poltergeist
@@ -194,10 +195,11 @@ module Kimurai
         if @config[:headless_mode] == :virtual_display
           unless self.class.virtual_display
             require 'headless'
-            # https://github.com/leonid-shevtsov/headless#running-tests-in-parallel
+
             self.class.virtual_display = Headless.new(reuse: true, destroy_at_exit: false)
             self.class.virtual_display.start
           end
+
           Log.debug "Session builder: enabled virtual_display headless mode for #{driver_name}"
         else
           @driver_options.args << "--headless"
@@ -206,30 +208,39 @@ module Kimurai
       end
     end
 
-    def check_recreate_if_memory_for_selenium_poltergeist
-      # ToDo: add another option (requests_count)
-      if @config[:session][:recreate_driver_if][:memory_size].present?
-        if [:selenium, :poltergeist].include?(driver_type)
-          value = @config[:session][:recreate_driver_if][:memory_size]
-          # ToDo: refactor Session#options as well
-          @session.options[:recreate_if_memory_more_than] = value
+    ###
 
-          Log.debug "Session builder: enabled recreate_driver_if memory_size will reach #{value} for #{driver_name} session"
+    def check_recreate_driver_if_requests_for_selenium_poltergeist
+      if value = @config.dig(:session, :recreate_driver_if, :requests_count).presence
+        if [:selenium, :poltergeist].include?(driver_type)
+          @session.options[:recreate_driver_if][:requests_count] = value
+          Log.debug "Session builder: enabled recreate_driver_if requests_count >= #{value} for #{driver_name} session"
         else
-          Log.debug "Session builder: driver type #{driver_type} don't support recreate_driver_if memory_size option, skipped"
+          Log.debug "Session builder: driver type #{driver_type} don't support recreate_driver_if requests_count option, skip"
+        end
+      end
+    end
+
+    def check_recreate_driver_if_memory_for_selenium_poltergeist
+      if value = @config.dig(:session, :recreate_driver_if, :memory_size).presence
+        if [:selenium, :poltergeist].include?(driver_type)
+          @session.options[:recreate_driver_if][:memory_size] = value
+          Log.debug "Session builder: enabled recreate_driver_if memory_size >= #{value} for #{driver_name} session"
+        else
+          Log.debug "Session builder: driver type #{driver_type} don't support recreate_driver_if memory_size option, skip"
         end
       end
     end
 
     def check_before_request_clear_cookies
-      if @config[:session][:before_request][:clear_cookies]
+      if @config.dig(:session, :before_request, :clear_cookies)
         @session.options[:before_request][:clear_cookies] = true
         Log.debug "Session builder: enabled `before_request_clear_cookies` for `#{driver_name}` session"
       end
     end
 
     def check_before_request_clear_and_set_cookies
-      if @config[:session][:before_request][:clear_and_set_cookies]
+      if @config.dig(:session, :before_request, :clear_and_set_cookies)
         if cookies = @config[:cookies].presence
           @session.options[:before_request][:clear_and_set_cookies] = cookies
           Log.debug "Session builder: enabled `before_request_clear_and_set_cookies` for `#{driver_name}` session"
@@ -240,7 +251,7 @@ module Kimurai
     end
 
     def check_before_request_change_user_agent_for_mechanize_poltergeist
-      if @config[:session][:before_request][:change_user_agent] && [:mechanize, :poltergeist].include?(driver_type)
+      if @config.dig(:session, :before_request, :change_user_agent) && [:mechanize, :poltergeist].include?(driver_type)
         if @config[:user_agent].present?
           @session.options[:before_request][:change_user_agent] = @config[:user_agent]
         else
@@ -251,7 +262,7 @@ module Kimurai
     end
 
     def check_before_request_change_proxy_for_mechanize_poltergeist
-      if @config[:session][:before_request][:change_proxy]
+      if @config.dig(:session, :before_request, :change_proxy)
         if [:mechanize, :poltergeist].include?(driver_type)
           if @config[:proxy].present?
             @session.options[:before_request][:change_proxy] = @config[:proxy]
@@ -266,16 +277,18 @@ module Kimurai
     end
 
     def check_before_request_set_delay
-      if delay = @config[:session][:before_request][:delay].presence
+      if delay = @config.dig(:session, :before_request, :delay).presence
         @session.options[:before_request][:delay] = delay
         Log.debug "Session builder: enabled before_request_delay for #{driver_name} session"
       end
     end
 
+    ###
+
+    # Not documented yet
     def check_phantomjs_custom_options
       if driver_type == :poltergeist
-        # https://github.com/teampoltergeist/poltergeist#customization
-        if options = @config[:additional_driver_options][:poltergeist_phantomjs].presence
+        if options = @config.dig(:additional_driver_options, :poltergeist_phantomjs).presence
           options.each do |key, value|
             @driver_options[key] = value
             Log.debug "Session builder: enabled additional_driver_option `#{key}` for #{driver_type}"
@@ -283,6 +296,5 @@ module Kimurai
         end
       end
     end
-
   end
 end

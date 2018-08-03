@@ -107,7 +107,7 @@ class ApplicationCrawler < Kimurai::Base
       # Note: conditions checks before each session request
       recreate_driver_if: {
         # when requests count for session driver will reach this limit, driver will be recreated
-        # requests_count: 80,
+        # requests_count: 80, # and more
         # when session driver reach provided memory size, driver will be recreated
         memory_size: 350_000 # and more
       },

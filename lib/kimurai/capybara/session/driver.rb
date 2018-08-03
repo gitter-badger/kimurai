@@ -2,11 +2,10 @@ module Capybara
   class Session
     attr_reader :driver_type, :driver_pid, :driver_port
 
-    # Driver don't create at the same time with session, it's created later,
-    # at the first call of #driver method. For example
-    # at the first #visit (because visit it's a wrapper for driver.visit)
-    # And this is exact reason why driver_pid will be nil, until driver
-    # will be created (`#create_session_driver`)
+    # Driver do not created at the same time with a session, it's created later,
+    # at the first call. For example at the first Session#visit (because it's a wrapper for driver.visit)
+    # And this is exact reason why driver_pid will be nil until driver
+    # will be created (see #create_session_driver)
     def driver
       @driver ||= create_session_driver
     end

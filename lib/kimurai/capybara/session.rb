@@ -20,7 +20,6 @@ module Capybara
         @logger ||= Logger.new(STDOUT)
       end
 
-      # rename to global stats
       def stats
         @stats ||= Concurrent::Hash.new.merge({
           requests: 0,
@@ -30,8 +29,11 @@ module Capybara
       end
     end
 
+    ###
+
     def options
       @options ||= {
+        recreate_driver_if: {},
         before_request: {}
       }
     end
@@ -44,6 +46,8 @@ module Capybara
         memory: [0]
       }
     end
+
+    ###
 
     alias_method :original_visit, :visit
     def visit(visit_uri, delay: options[:before_request][:delay], skip_request_options: false, max_retries: 3)
@@ -174,12 +178,20 @@ module Capybara
     end
 
     def check_request_options
-
-      if limit = options[:recreate_if_memory_more_than]
+      if mem_limit = options[:recreate_driver_if][:memory_size]
         memory = current_memory
-        if memory > limit
-          logger.warn "Session: limit: #{limit} of current_memory: #{memory} is exceeded"
+        if memory >= mem_limit
+          logger.warn "Session: memory limit #{mem_limit} of current_memory #{memory} is exceeded for driver #{mode}"
           recreate_driver!
+        end
+      end
+
+      if req_limit = options[:recreate_driver_if][:requests_count]
+        if stats[:requests] >= req_limit
+          logger.warn "Session: requests limit #{req_limit} of current count #{stats[:requests]} is exceeded for driver #{mode}"
+          recreate_driver!
+
+          stats[:requests], stats[:responses] = 0, 0
         end
       end
 

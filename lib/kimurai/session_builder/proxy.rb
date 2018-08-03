@@ -32,9 +32,9 @@ module Kimurai
 
             Log.debug "Session builder: enabled #{proxy_type} proxy for selenium_firefox: #{proxy_ip}:#{proxy_port}"
           when :selenium_chrome
-            # remember, you still trackable because of webrtc enabled https://ipleak.net/
-            # and in chrome there is no easy way to disable it.
-            # you can run chrome with a custom preconfigured profile with a special extention https://stackoverflow.com/a/44602360
+            # remember, you still trackable because of webrtc enabled. In chrome
+            # there is no easy way to disable it. You can run chrome with a custom
+            # preconfigured profile with a special extention https://stackoverflow.com/a/44602360
             @driver_options.args << "--proxy-server=#{proxy_type}://#{proxy_ip}:#{proxy_port}"
             Log.debug "Session builder: enabled #{proxy_type} proxy for selenium_chrome: #{proxy_ip}:#{proxy_port}"
           end

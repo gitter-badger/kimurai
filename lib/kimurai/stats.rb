@@ -135,8 +135,6 @@ module Kimurai
       def calculate_difference(current, previous)
         return if current == 0 || previous == 0
         (((current - previous).to_r / previous) * 100).to_f.round(1)
-      # rescue => e
-      #   binding.pry
       end
     end
 

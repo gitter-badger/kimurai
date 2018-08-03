@@ -31,8 +31,13 @@ job_type :runner, "cd :path && KIMURAI_ENV=:environment bundle exec kimurai runn
 # single file job type
 job_type :singe, "cd :path && KIMURAI_ENV=:environment bundle exec ruby :task :output"
 
-### Schedule ###
+### How to set cron schedule ###
+# Easy, just run `$ whenever --update-crontab` (if you don't have command `$ whenever`,
+# install it: `$ gem install whenever`).
+# Whenever assumes that schedule.rb located in `cofig/schedule.rb`. To provide
+# custom path to the schedule run: `$ whenever --load-file ./schedule.rb --update-crontab`.
 
+### Schedule ###
 # Usage (check examples here https://github.com/javan/whenever#example-schedulerb-file):
 # every 1.hour do
   # Example to schedule single crawler in the project:

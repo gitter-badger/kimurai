@@ -84,7 +84,6 @@ module Kimurai
 
       # Ensure to update run status the last time at process exit (handle ctr-c as well)
       at_exit { callback.call }
-
       # update run status in database every 3 seconds
       Concurrent::TimerTask.new(execution_interval: 3, timeout_interval: 3) { callback.call }.execute
     end
@@ -103,7 +102,7 @@ module Kimurai
         Kimurai.time_zone = time_zone
       end
 
-      enable_stats if Kimurai.configuration.stats
+      enable_stats if Kimurai.configuration.stats_database_url
 
       # initialization
       pipelines = self.pipelines.map do |pipeline|

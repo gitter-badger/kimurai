@@ -29,10 +29,10 @@ Kimurai.configure do |config|
   # config.time_zone = "UTC"
   # config.time_zone = "Europe/Moscow"
 
-  # enable database stats
-  # config.stats = true
-
-  # set database url (sequel scheme) for stats (required if config.stats set to true)
+  # Provide stats_database_url to enable stats and save info about crawlers runs and sessions to
+  # a database. To check stats run dashboard: `$ bundle exec kimurai dashboard`.
+  # Check format for a database url: https://sequel.jeremyevans.net/rdoc/files/doc/opening_databases_rdoc.html
+  # You can use sqlite, postgres or mysql database (check Gemfile and uncomment required gem).
   # config.stats_database_url = "sqlite://db/crawlers_runs_#{Kimurai.env}.sqlite3"
 
   # Optional settings for a dashboard

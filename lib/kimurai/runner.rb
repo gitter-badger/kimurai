@@ -12,7 +12,7 @@ module Kimurai
         Kimurai.time_zone = time_zone
       end
 
-      require 'kimurai/stats' if Kimurai.configuration.stats
+      require 'kimurai/stats' if Kimurai.configuration.stats_database_url
     end
 
     def run!
@@ -48,14 +48,14 @@ module Kimurai
         end
 
         puts ">> Runner: stopped session: #{session_info}"
-        update_session(session_info) if Kimurai.configuration.stats
+        update_session(session_info) if Kimurai.configuration.stats_database_url
         if at_stop_callback = Kimurai.configuration.runner_at_stop_callback
           at_stop_callback.call(session_info)
         end
       end
 
       puts ">> Runner: started session: #{session_info}"
-      register_session(session_info) if Kimurai.configuration.stats
+      register_session(session_info) if Kimurai.configuration.stats_database_url
       if at_start_callback = Kimurai.configuration.runner_at_start_callback
         at_start_callback.call(session_info)
       end

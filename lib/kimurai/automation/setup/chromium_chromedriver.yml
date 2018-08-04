@@ -19,8 +19,8 @@
 
 - name: Download chromedriver binary archive and unarchive it to /usr/local/bin
   unarchive:
-    src: https://chromedriver.storage.googleapis.com/{{ desired_chromedriver_version }}/chromedriver_linux64.zip
+    src: https://chromedriver.storage.googleapis.com/{{ chromedriver }}/chromedriver_linux64.zip
     dest: /usr/local/bin
     remote_src: true
     mode: a+x
-  when: desired_chromedriver_version not in current_chromedriver_version.stdout_lines
+  when: chromedriver not in current_chromedriver_version.stdout_lines

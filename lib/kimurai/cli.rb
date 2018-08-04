@@ -35,7 +35,7 @@ module Kimurai
     option "ssh-key-path", type: :string, banner: "Auth using ssh key"
     option :local, type: :boolean, banner: "Run setup on a local machine (Ubuntu only)"
     def setup(user_host)
-      command = get_ansible_command(user_host, playbook: "main.yml")
+      command = get_ansible_command(user_host, playbook: "setup")
 
       pid = spawn *command
       Process.wait pid
@@ -57,7 +57,7 @@ module Kimurai
       repo_url = options["repo-url"] ? options["repo-url"] : `git remote get-url origin`.strip
       repo_name = repo_url[/\/([^\/]*)\.git/i, 1]
 
-      command = get_ansible_command(user_host, playbook: "deploy.yml",
+      command = get_ansible_command(user_host, playbook: "deploy",
         vars: { repo_url: repo_url, repo_name: repo_name, git_key_path: options["git-key-path"] }
       )
 
@@ -162,7 +162,7 @@ module Kimurai
       inventory = options["port"] ? "#{host}:#{options['port']}," : "#{host},"
 
       gem_dir = Gem::Specification.find_by_name("kimurai").gem_dir
-      playbook_path = gem_dir + "/lib/kimurai/provision/" + playbook
+      playbook_path = gem_dir + "/lib/kimurai/automation/" + "#{playbook}.yml"
 
       command = [
         "ansible-playbook", playbook_path,
@@ -172,8 +172,15 @@ module Kimurai
         "--extra-vars", "ansible_python_interpreter=/usr/bin/python3"
       ]
 
+      if File.exists? "config/automation.yml"
+        require 'yaml'
+        if config = YAML.load_file("config/automation.yml").dig(playbook)
+          config.each { |key, value| vars[key] = value unless vars[key] }
+        end
+      end
+
       vars.each do |key, value|
-        next if value.nil? || value.empty?
+        next if value.nil? || "#{value}".empty?
         command.push "--extra-vars", "#{key}=#{value}"
       end
 

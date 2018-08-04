@@ -42,12 +42,12 @@
 
 - name: Check if desired ruby version already installed
   stat:
-    path: "{{ ruby_versions_path }}/{{ desired_ruby_version }}"
-  register: desired_ruby_version_present
+    path: "{{ ruby_versions_path }}/{{ ruby }}"
+  register: ruby_present
 
 - name: Install desired ruby version using ruby-build (this can take a while)
-  command: rbenv install {{ desired_ruby_version }}
-  when: not desired_ruby_version_present.stat.exists
+  command: rbenv install {{ ruby }}
+  when: not ruby_present.stat.exists
   environment:
     CONFIGURE_OPTS: "--disable-install-doc"
     PATH: "{{ rbenv_root_path }}/bin:{{ rbenv_root_path }}/shims:{{ ansible_env.PATH }}"
@@ -61,19 +61,19 @@
     PATH: "{{ rbenv_root_path }}/bin:{{ rbenv_root_path }}/shims:{{ ansible_env.PATH }}"
 
 - name: Set desired ruby version as a global version
-  command: "rbenv global {{ desired_ruby_version }}"
-  when: desired_ruby_version not in current_ruby_version.stdout
+  command: "rbenv global {{ ruby }}"
+  when: ruby not in current_ruby_version.stdout
   environment:
     PATH: "{{ rbenv_root_path }}/bin:{{ rbenv_root_path }}/shims:{{ ansible_env.PATH }}"
-  register: set_desired_ruby_version
+  register: set_ruby
 
 - name: Execute `rbenv rehash` command
   command: rbenv rehash
-  when: set_desired_ruby_version.changed
+  when: set_ruby.changed
   environment:
     PATH: "{{ rbenv_root_path }}/bin:{{ rbenv_root_path }}/shims:{{ ansible_env.PATH }}"
 
-- name: Create ~/.gemrc file with settings to skip docs downloading for gems
+- name: Create ~/.gemrc file to skip docs
   copy:
     dest: ~/.gemrc
     content: "gem: --no-ri --no-rdoc"
@@ -92,7 +92,7 @@
 
 - name: Check if bundler gem installed
   stat:
-    path: "{{ ruby_versions_path }}/{{ desired_ruby_version }}/bin/bundler"
+    path: "{{ ruby_versions_path }}/{{ ruby }}/bin/bundler"
   register: bundler_gem_present
 
 - name: Install bundler gem
@@ -103,7 +103,7 @@
 
 - name: Check if whenever gem installed
   stat:
-    path: "{{ ruby_versions_path }}/{{ desired_ruby_version }}/bin/whenever"
+    path: "{{ ruby_versions_path }}/{{ ruby }}/bin/whenever"
   register: whenever_gem_present
 
 - name: Install whenever gem

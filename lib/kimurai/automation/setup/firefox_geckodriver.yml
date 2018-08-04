@@ -14,7 +14,7 @@
 
 - name: Download geckodriver binary archive and unarchive it to /usr/local/bin
   unarchive:
-    src: https://github.com/mozilla/geckodriver/releases/download/v{{ desired_geckodriver_version }}/geckodriver-v{{ desired_geckodriver_version }}-linux64.tar.gz
+    src: https://github.com/mozilla/geckodriver/releases/download/v{{ geckodriver }}/geckodriver-v{{ geckodriver }}-linux64.tar.gz
     dest: /usr/local/bin
     remote_src: true
-  when: desired_geckodriver_version not in current_geckodriver_version.stdout
+  when: geckodriver not in current_geckodriver_version.stdout

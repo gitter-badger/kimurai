@@ -21,7 +21,7 @@ module Kimurai
 
     ###
 
-    def save_to(path, item, format:, position: false)
+    def save_to(path, item, format:, position: true)
       SimpleSaver.save(item, path: path, format: format, position: position)
     end
   end

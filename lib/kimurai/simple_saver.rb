@@ -7,7 +7,7 @@ module Kimurai
     @count = 0
     @mutex = Mutex.new
 
-    def self.save(item, path:, format:, position: false)
+    def self.save(item, path:, format:, position: true)
       @mutex.synchronize do
         @count += 1
         item[:position] = @count if position

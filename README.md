@@ -200,7 +200,7 @@ I, [2018-08-04 17:54:45 +0400#29308] [Main: 47115312711160]  INFO -- infinite_sc
 * Rich configuration: set default headers, cookies, delay between requests, enable proxy/user-agents rotation. Auto retry if a request was failed
 * Settings and crawlers inheritation
 * **Two modes:** write a single file for simple crawler, or generate Scrapy like **project with pipelines, configuration, etc.**
-* Automatically restart browser when reaching memory limit (memory control) or requests limit (set limit in the crawler config)
+* Automatically restart browser when reaching memory limit **(memory control)** or requests limit (set limit in the crawler config)
 * Parallel crawling using simple method: `in_parallel(:callback_name, threads_count, urls: urls)`
 * Convenient development mode with console, colorized logger and debugger ([Pry](https://github.com/pry/pry), [Byebug](https://github.com/deivid-rodriguez/byebug)). Add `HEADLESS=false` before command to quickly switch between headless (default) and normal (visible) mode for Selenium-like drivers (Chrome, Firefox).
 * Full stats for each crawler run: requests/items count + web dashboard
@@ -208,7 +208,7 @@ I, [2018-08-04 17:54:45 +0400#29308] [Main: 47115312711160]  INFO -- infinite_sc
 * Easily schedule crawlers within cron using [Whenever](https://github.com/javan/whenever) (no need to know cron syntax)
 * Command-line runner to run all project crawlers one by one or in parallel
 * Built-in helpers to make scraping easy, like `save_to` (save items to JSON, JSON lines, CSV or YAML formats) or `absolute_url/normalize_url`
-* `at_start` and `at_stop` callbacks which allows to make something useful (like sending notification) before crawler started or after crawler has been stopped
+* `at_start` and `at_stop` callbacks which allows to make something useful (like sending notification) before crawler started or after crawler has been stopped (available full run info: requests/items count, total time, etc)
 
 ## Installation
 
@@ -480,7 +480,7 @@ class GoogleCrawler < Kimurai::Base
 end
 ```
 
-Check out **Capybara cheat sheets** where you can see all available methods:
+Check out **Capybara cheat sheets** where you can see all available methods **to interact with browser**:
 * [UI Testing with RSpec and Capybara [cheat sheet]](http://cheatrags.com/capybara) - cheatrags.com
 * [Capybara Cheatsheet PDF](https://thoughtbot.com/upcase/test-driven-rails-resources/capybara.pdf) - thoughtbot.com
 
@@ -580,14 +580,75 @@ By default `save_to` add position key to an item hash. You can disable it with `
 
 Until crawler stops, each new item will be appended to a file. At the next run, helper will clear the content of a file first, and then start again appending items to it.
 
-<!-- ### prevent duplicates, `unique?` helper
+### Skip duplicates, `unique?` helper
 
-### parallel crawling (), delay
-yes, proxy and headers are changeable + memory control and auto reloading (see configuration).
+It's pretty common when websites have duplicated pages. For example when an e-commerce shop has the same products in different categories. To skip duplicates, there is `unique?` helper:
 
-## Custom configuration
+```ruby
+class ProductsCrawler < Kimurai::Base
+  @driver = :selenium_chrome
+  @start_urls = ["https://example-shop.com/"]
 
-@config -->
+  def parse(response, url:, data: {})
+    response.xpath("//categories/path").each do |category|
+      request_to :parse_category, url: category[:href]
+    end
+  end
+
+  # check products for uniqueness using product url inside of parse_category
+  def parse_category(response, url:, data: {})
+    response.xpath("//products/path").each do |product|
+      # skip url if it's not unique
+      next unless unique?(product_url: product[:href])
+      # otherwise process it
+      request_to :parse_product, url: product[:href]
+    end
+  end
+
+  # or/and check products for uniqueness using product stock number inside of parse_product
+  def parse_product(response, url:, data: {})
+    item = {}
+    item[:stock_number] = response.xpath("//product/stock_number/path").text.strip.upcase
+    # don't save product and return from method if there is already saved item with same stock_number
+    return unless unique?(stock_number: item[:stock_number])
+
+    # ...
+    save_to "results.json", item, format: :json
+  end
+end
+```
+
+`unique?` helper works very simple:
+
+```ruby
+# check string "http://example.com" in scope `url` for a first time:
+unique?(url: "http://example.com")
+# => true
+
+# try again:
+unique?(url: "http://example.com")
+# => false
+```
+
+Before check something for uniqueness you need to provide a scope:
+
+```ruby
+# `product_url` scope
+unique?(product_url: "http://example.com/product_1")
+
+# `id` scope
+unique?(id: 324234232)
+```
+
+
+<!-- ### parallel crawling (), delay -->
+<!-- yes, proxy and headers are changeable + memory control and auto reloading (see configuration). -->
+
+<!-- at_start at_stop callbacks -->
+
+<!-- ## Custom configuration -->
+
+<!-- @config -->
 
 
 

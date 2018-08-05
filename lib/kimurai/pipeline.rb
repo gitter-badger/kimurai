@@ -9,6 +9,10 @@ module Kimurai
       def name
         self.to_s.sub(/.*?::/, "").underscore.to_sym
       end
+
+      def logger
+        Log.instance
+      end
     end
 
     include BaseHelper

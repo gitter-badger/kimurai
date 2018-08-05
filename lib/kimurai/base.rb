@@ -158,6 +158,10 @@ module Kimurai
       failed? ? Log.fatal(message) : Log.info(message)
     end
 
+    def self.logger
+      Log.instance
+    end
+
     ###
 
     def initialize(driver: self.class.driver, config: {})

@@ -24,18 +24,13 @@ module Kimurai
         <<~RUBY
           class #{to_crawler_class(crawler_name)} < ApplicationCrawler
             @name = "#{crawler_name}"
+            @start_urls = []
             @config = {}
 
             def parse(response, url:, data: {})
             end
           end
         RUBY
-      end
-
-      if start_url = options["start_url"]
-        insert_into_file(crawler_path, after: %Q{@name = "#{crawler_name}"\n}) do
-          %Q{  @start_urls = ["#{start_url}"]\n}
-        end
       end
     end
 

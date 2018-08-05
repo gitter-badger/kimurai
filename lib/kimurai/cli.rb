@@ -10,7 +10,6 @@ module Kimurai
     end
 
     desc "generate", "Generator, available types: crawler, schedule"
-    option :start_url, type: :string, banner: "Start url for a new crawler"
     def generate(generator_type, *args)
       case generator_type
       when "crawler"

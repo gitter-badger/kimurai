@@ -1,7 +1,7 @@
 ### Settings ###
 require 'tzinfo'
 
-# Export current PATH to the cron command, especially required if you are using rbenv
+# Export current PATH to the cron
 env :PATH, ENV["PATH"]
 
 # Use 24 hour format when using `at:` option
@@ -15,41 +15,43 @@ set :chronic_options, hours24: true
 # every 1.day, at: local_to_utc("7:00", zone: "Europe/Moscow") do
 #   start "google_crawler.com", output: "log/google_crawler.com.log"
 # end
-
 def local_to_utc(time_string, zone:)
   TZInfo::Timezone.get(zone).local_to_utc(Time.parse(time))
 end
 
-# Note: by default whenever exports cron commands with :environment == "production".
-# Note: whenever can only append log data to a log file (>>). If you want
-# crawler log file to be overwritten (>) before each run, pass lambda, (example):
+# Note: by default Whenever exports cron commands with :environment == "production".
+# Note: Whenever can only append log data to a log file (>>). If you want
+# to overwrite (>) log file before each run, pass lambda:
 # start "google_crawler.com", output: -> { "> log/google_crawler.com.log 2>&1" }
 
 # project job types
 job_type :start,  "cd :path && KIMURAI_ENV=:environment bundle exec kimurai start :task :output"
 job_type :runner, "cd :path && KIMURAI_ENV=:environment bundle exec kimurai runner --jobs :task :output"
-# single file job type
-job_type :singe, "cd :path && KIMURAI_ENV=:environment bundle exec ruby :task :output"
 
-### How to set cron schedule ###
-# Easy, just run `$ whenever --update-crontab` (if you don't have command `$ whenever`,
-# install it: `$ gem install whenever`).
-# Whenever assumes that schedule.rb located in `cofig/schedule.rb`. To provide
-# custom path to the schedule run: `$ whenever --load-file ./schedule.rb --update-crontab`.
+# single file job type
+job_type :single, "cd :path && KIMURAI_ENV=:environment ruby :task :output"
+# single with bundle exec
+job_type :single_bundle, "cd :path && KIMURAI_ENV=:environment bundle exec ruby :task :output"
 
 ### Schedule ###
 # Usage (check examples here https://github.com/javan/whenever#example-schedulerb-file):
-# every 1.hour do
+# every 1.day do
   # Example to schedule single crawler in the project:
   # start "google_crawler.com", output: "log/google_crawler.com.log"
 
   # Example to schedule all crawlers in the project using runner. Each crawler will write
-  # own output to the log/crawler_name.log file (handled by runner itself).
+  # it's own output to the `log/crawler_name.log` file (handled by runner itself).
   # Runner output will be written to log/runner.log file.
-  # Number argument it's a number of concurrent jobs:
+  # Argument number it's a count of concurrent jobs:
   # runner 3, output:"log/runner.log"
 
   # Example to schedule single crawler file (without project)
-  # Note: you need to have Gemfile as well:
-  # single "./single_crawler.rb", output: "single_crawler.log"
+  # single "single_crawler.rb", output: "single_crawler.log"
 # end
+
+### How to set cron schedule ###
+# Run: `$ whenever --update-crontab --load-file config/schedule.rb`.
+# If you don't have whenever command, install gem: `$ gem install whenever`.
+
+### How to cancel schedule ###
+# Run: `$ whenever --clear-crontab --load-file config/schedule.rb`.

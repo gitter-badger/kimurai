@@ -164,7 +164,6 @@ end
 InfiniteScrollCrawler.start!
 ```
 
-
 <details/>
   <summary>Run: <code>$ ruby infinite_scroll_crawler.rb</code></summary>
 
@@ -197,7 +196,7 @@ I, [2018-08-04 17:54:45 +0400#29308] [Main: 47115312711160]  INFO -- infinite_sc
 * Supported drivers: [Headless Chrome](https://developers.google.com/web/updates/2017/04/headless-chrome), [Headless Firefox](https://developer.mozilla.org/en-US/docs/Mozilla/Firefox/Headless_mode), [PhantomJS](https://github.com/ariya/phantomjs) and  HTTP requests ([mechanize](https://github.com/sparklemotion/mechanize) gem)
 * Write crawler code once, and use it with any supported driver later. You can even switch between drivers on the fly
 * All the power of [Capybara](https://github.com/teamcapybara/capybara): use methods like `click_on`, `fill_in`, `select`, `choose`, `set`, `go_back`, etc. to interact with web pages
-* Rich configuration: set default headers, cookies, delay between requests, enable proxy/user-agents rotation. Auto retry if a request was failed
+* Rich configuration: **set default headers, cookies, delay between requests, enable proxy/user-agents rotation**. Auto retry if a request was failed
 * Settings and crawlers inheritation
 * **Two modes:** write a single file for simple crawler, or generate Scrapy like **project with pipelines, configuration, etc.**
 * Automatically restart browser when reaching memory limit **(memory control)** or requests limit (set limit in the crawler config)
@@ -410,10 +409,10 @@ SimpleCrawler.start!
 ```
 
 Where:
-* class variable `@name` it's a name of crawler. You can omit name if use single file crawler.
-* `@driver` driver for crawler. Available drivers: `:selenium_chrome` (Chrome), `:selenium_firefox` (Firefox), `:poltergeist_phantomjs` (PhantomJS), and `:mechanize` (fake http browser, can't render javascript but very fast and lightweight).
+* class variable `@name` it's a name of crawler. You can omit name if use single file crawler
+* `@driver` driver for crawler
 * `@start_urls` array of start urls to process one by one inside `parse` method
-* Method `parse` is the starting method, should always present in crawler class.
+* Method `parse` is the starting method, should always present in crawler class
 
 Each instance crawler method which you want to access from `request_to` should take following arguments:
 * `response` is [Nokogiri::HTML::Document](https://www.rubydoc.info/github/sparklemotion/nokogiri/Nokogiri/HTML/Document) object. Contains parsed HTML code from [Capybara::Session](https://www.rubydoc.info/github/jnicklas/capybara/Capybara/Session) [#body method](https://www.rubydoc.info/github/jnicklas/capybara/Capybara%2FSession:body) of currently processing url. **You can query `response` using [XPath or CSS selectors.](https://www.rubydoc.info/github/sparklemotion/nokogiri/Nokogiri/XML/Searchable)**
@@ -434,6 +433,7 @@ class ProductsCrawler < Kimurai::Base
     category_name = response.xpath("//path/to/category/name").text
 
     response.xpath("//path/to/products/urls").each do |product_url|
+      # merge category_name with current data hash and pass it next to parse_product method
       request_to(:parse_product, url: product_url[:href], data: data.merge(category_name: category_name))
     end
 
@@ -442,6 +442,7 @@ class ProductsCrawler < Kimurai::Base
 
   def parse_product(response, url:, data: {})
     item = {}
+    # assign item's category_name from data[:category_name]
     item[:category_name] = data[:category_name]
 
     # ...
@@ -450,6 +451,17 @@ end
 
 ```
 </details>
+
+### Available drivers
+
+Kimurai has support for following drivers and mostly can switch between them without need to rewrite any code:
+
+* `:mechanize` - [pure Ruby fake http browser](https://github.com/sparklemotion/mechanize). Mechanize can't render javascript and don't know what DOM is it. It only can parse original HTML code of a page. Because of it, mechanize much faster, takes much less memory and in general much more stable than any real browser. Use mechanize if you can do it, and the website doesn't use javascript to render any meaningful parts of its structure. Still, because mechanize trying to mimic a real browser, it supports almost all Capybara's [methods to interact with a web page](http://cheatrags.com/capybara) (filling forms, clicking buttons, checkboxes, etc).
+* `:poltergeist_phantomjs` - [PhantomJS headless browser](https://github.com/ariya/phantomjs), can render javascript. In general, PhantomJS still faster than Headless Chrome (and headless firefox). PhantomJS has memory leakage, but Kimurai has memory control feature so you shouldn't consider it as a problem. Also, some websites can recognize PhantomJS and block access to them. Like mechanize (and unlike selenium drivers) `:poltergeist_phantomjs` can freely rotate proxies and change headers _on the fly_ (See Config section).
+* `:selenium_chrome` Chrome in headless mode driven by selenium. Modern headless browser solution with proper javascript rendering.
+* `:selenium_firefox` Firefox in headless mode driven by selenium. Usually takes more memory than other drivers, but sometimes can be useful.
+
+Tip: add `HEADLESS=false` env variable before command (`$ HEADLESS=false ruby crawler.rb`) to run browser in normal (not headless) mode and see it's window (only for selenium-like drivers).
 
 ### `browser` object
 
@@ -532,7 +544,7 @@ class Crawler < Kimurai::Base
     url_to_process = "https://example.com/some_product"
 
     browser.visit(url_to_process)
-    parse_product(browser.response, url: url_to_process)
+    parse_product(browser.current_response, url: url_to_process)
   end
 
   def parse_product(response, url:, data: {})
@@ -560,6 +572,7 @@ class ProductsCrawler < Kimurai::Base
     item[:description] = response.xpath("//desc/path").text.squish
     item[:price] = response.xpath("//price/path").text[/\d+/]&.to_f
 
+    # add each new item to `scraped_products.json` file
     save_to "scraped_products.json", item, format: :json
   end
 end
@@ -618,7 +631,7 @@ class ProductsCrawler < Kimurai::Base
 end
 ```
 
-`unique?` helper works very simple:
+`unique?` helper works pretty simple:
 
 ```ruby
 # check string "http://example.com" in scope `url` for a first time:
@@ -630,7 +643,7 @@ unique?(url: "http://example.com")
 # => false
 ```
 
-Before check something for uniqueness you need to provide a scope:
+To check something for uniqueness, you need to provide a scope:
 
 ```ruby
 # `product_url` scope
@@ -641,6 +654,433 @@ unique?(id: 324234232)
 
 # `custom` scope
 unique?(custom: "Lorem Ipsum")
+```
+
+### `at_start` and `at_stop` callbacks
+
+You can define `.at_start` and `.at_stop` callbacks (class methods) to perform some action before crawler started or after crawler has been stopped:
+
+```ruby
+require 'kimurai'
+require 'kimurai/all'
+
+class Crawler < Kimurai::Base
+  @name = "example_crawler"
+  @driver = :selenium_chrome
+  @start_urls = ["https://example.com/"]
+
+  def self.at_start
+    logger.info "> Starting..."
+  end
+
+  def self.at_stop
+    logger.info "> Stopped!"
+  end
+
+  def parse(response, url:, data: {})
+    logger.info "> Scraping..."
+  end
+end
+
+Crawler.start!
+```
+
+<details/>
+  <summary>Output</summary>
+
+```
+I, [2018-08-05 23:14:55 +0400#15800] [Main: 47044281271800]  INFO -- example_crawler: > Starting...
+D, [2018-08-05 23:14:55 +0400#15800] [Main: 47044281271800] DEBUG -- example_crawler: Session builder: driver gem required: selenium
+D, [2018-08-05 23:14:55 +0400#15800] [Main: 47044281271800] DEBUG -- example_crawler: Session builder: created session instance
+I, [2018-08-05 23:14:55 +0400#15800] [Main: 47044281271800]  INFO -- example_crawler: Session: started get request to: https://example.com/
+D, [2018-08-05 23:14:55 +0400#15800] [Main: 47044281271800] DEBUG -- example_crawler: Session builder: enabled native headless mode for selenium_chrome
+D, [2018-08-05 23:14:55 +0400#15800] [Main: 47044281271800] DEBUG -- example_crawler: Session builder: created driver instance (selenium_chrome)
+I, [2018-08-05 23:14:55 +0400#15800] [Main: 47044281271800]  INFO -- example_crawler: Session: a new session driver has been created: driver name: selenium_chrome, pid: 15840, port: 9515
+I, [2018-08-05 23:14:56 +0400#15800] [Main: 47044281271800]  INFO -- example_crawler: Session: finished get request to: https://example.com/
+I, [2018-08-05 23:14:56 +0400#15800] [Main: 47044281271800]  INFO -- example_crawler: Stats visits: requests: 1, responses: 1
+D, [2018-08-05 23:14:56 +0400#15800] [Main: 47044281271800] DEBUG -- example_crawler: Session: current_memory: 129448
+I, [2018-08-05 23:14:56 +0400#15800] [Main: 47044281271800]  INFO -- example_crawler: > Scraping...
+I, [2018-08-05 23:14:56 +0400#15800] [Main: 47044281271800]  INFO -- example_crawler: Crawler: stopped: {:crawler_name=>"example_crawler", :status=>:completed, :environment=>"development", :start_time=>2018-08-05 23:14:55 +0400, :stop_time=>2018-08-05 23:14:56 +0400, :running_time=>"1s", :session_id=>nil, :visits=>{:requests=>1, :responses=>1, :requests_errors=>{}}, :error=>nil, :server=>{:hostname=>"my-pc", :ipv4=>"192.168.0.2", :process_pid=>15800}}
+I, [2018-08-05 23:14:56 +0400#15800] [Main: 47044281271800]  INFO -- example_crawler: > Stopped!
+
+```
+</details><br>
+
+Inside `at_start` and `at_stop` class methods there is available `run_info` method which contains useful information about crawler state:
+
+```ruby
+    11: def self.at_start
+ => 12:   binding.pry
+    13: end
+
+[1] pry(example_crawler)> run_info
+=> {
+  :crawler_name=>"example_crawler",
+  :status=>:running,
+  :environment=>"development",
+  :start_time=>2018-08-05 23:32:00 +0400,
+  :stop_time=>nil,
+  :running_time=>nil,
+  :session_id=>nil,
+  :visits=>{:requests=>0, :responses=>0, :requests_errors=>{}},
+  :error=>nil,
+  :server=>{:hostname=>"my-pc", :ipv4=>"192.168.0.2", :process_pid=>20814}
+}
+
+```
+
+Inside `at_stop`, `run_info` will be updated:
+
+```ruby
+    15: def self.at_stop
+ => 16:   binding.pry
+    17: end
+
+[1] pry(example_crawler)> run_info
+=> {
+  :crawler_name=>"example_crawler",
+  :status=>:completed,
+  :environment=>"development",
+  :start_time=>2018-08-05 23:32:00 +0400,
+  :stop_time=>2018-08-05 23:32:06 +0400,
+  :running_time=>6.214,
+  :session_id=>nil,
+  :visits=>{:requests=>1, :responses=>1, :requests_errors=>{}},
+  :error=>nil,
+  :server=>{:hostname=>"my-pc", :ipv4=>"192.168.0.2", :process_pid=>20814}
+}
+```
+
+`run_info[:status]` helps to determine if crawler was finished successfully or failed (possible values: `:completed`, `:failed`):
+
+```ruby
+class Crawler < Kimurai::Base
+  @name = "example_crawler"
+  @driver = :selenium_chrome
+  @start_urls = ["https://example.com/"]
+
+  def self.at_stop
+    puts ">>> run info: #{run_info}"
+  end
+
+  def parse(response, url:, data: {})
+    logger.info "> Scraping..."
+    # Let's try to strip nil:
+    nil.strip
+  end
+end
+```
+
+<details/>
+  <summary>Output</summary>
+
+```
+D, [2018-08-05 23:52:54 +0400#26484] [Main: 47111535224320] DEBUG -- example_crawler: Session builder: driver gem required: selenium
+D, [2018-08-05 23:52:54 +0400#26484] [Main: 47111535224320] DEBUG -- example_crawler: Session builder: created session instance
+I, [2018-08-05 23:52:54 +0400#26484] [Main: 47111535224320]  INFO -- example_crawler: Session: started get request to: https://example.com/
+D, [2018-08-05 23:52:54 +0400#26484] [Main: 47111535224320] DEBUG -- example_crawler: Session builder: enabled native headless mode for selenium_chrome
+D, [2018-08-05 23:52:54 +0400#26484] [Main: 47111535224320] DEBUG -- example_crawler: Session builder: created driver instance (selenium_chrome)
+I, [2018-08-05 23:52:54 +0400#26484] [Main: 47111535224320]  INFO -- example_crawler: Session: a new session driver has been created: driver name: selenium_chrome, pid: 26516, port: 9515
+I, [2018-08-05 23:52:55 +0400#26484] [Main: 47111535224320]  INFO -- example_crawler: Session: finished get request to: https://example.com/
+I, [2018-08-05 23:52:55 +0400#26484] [Main: 47111535224320]  INFO -- example_crawler: Stats visits: requests: 1, responses: 1
+D, [2018-08-05 23:52:55 +0400#26484] [Main: 47111535224320] DEBUG -- example_crawler: Session: current_memory: 129015
+I, [2018-08-05 23:52:55 +0400#26484] [Main: 47111535224320]  INFO -- example_crawler: > Scraping...
+F, [2018-08-05 23:52:55 +0400#26484] [Main: 47111535224320] FATAL -- example_crawler: Crawler: stopped: {:crawler_name=>"example_crawler", :status=>:failed, :environment=>"development", :start_time=>2018-08-05 23:52:54 +0400, :stop_time=>2018-08-05 23:52:55 +0400, :running_time=>"1s", :session_id=>nil, :visits=>{:requests=>1, :responses=>1, :requests_errors=>{}}, :error=>"#<NoMethodError: undefined method `strip' for nil:NilClass>", :server=>{:hostname=>"my-pc", :ipv4=>"192.168.0.2", :process_pid=>26484}}
+
+>>> run info: {:crawler_name=>"example_crawler", :status=>:failed, :environment=>"development", :start_time=>2018-08-05 23:52:54 +0400, :stop_time=>2018-08-05 23:52:55 +0400, :running_time=>1.445, :session_id=>nil, :visits=>{:requests=>1, :responses=>1, :requests_errors=>{}}, :error=>"#<NoMethodError: undefined method `strip' for nil:NilClass>", :server=>{:hostname=>"my-pc", :ipv4=>"192.168.0.2", :process_pid=>26484}}
+
+Traceback (most recent call last):
+        6: from crawler.rb:22:in `<main>'
+        5: from /home/victor/code/kimurai/lib/kimurai/base.rb:135:in `start!'
+        4: from /home/victor/code/kimurai/lib/kimurai/base.rb:135:in `each'
+        3: from /home/victor/code/kimurai/lib/kimurai/base.rb:136:in `block in start!'
+        2: from /home/victor/code/kimurai/lib/kimurai/base.rb:178:in `request_to'
+        1: from /home/victor/code/kimurai/lib/kimurai/base.rb:178:in `public_send'
+crawler.rb:18:in `parse': undefined method `strip' for nil:NilClass (NoMethodError)
+```
+</details><br>
+
+**Usage example:** if crawler finished successfully, send JSON file with scraped items to a remote FTP location, otherwise (if crawler failed), skip incompleted results and send email/notification to slack about it:
+
+<details/>
+  <summary>Show example</summary>
+
+Also you can use additional methods `completed?` or `failed?`
+
+```ruby
+class Crawler < Kimurai::Base
+  @driver = :selenium_chrome
+  @start_urls = ["https://example.com/"]
+
+  def self.at_stop
+    if completed?
+      send_file_to_ftp("results.json")
+    else
+      send_error_notification(run_info[:error])
+    end
+  end
+
+  def self.send_file_to_ftp(file_path)
+    # ...
+  end
+
+  def self.send_error_notification(error)
+    # ...
+  end
+
+  # ...
+
+  def parse_item(response, url:, data: {})
+    item = {}
+
+    # ...
+
+    save_to "results.json", item, format: :json
+  end
+end
+```
+</details>
+
+### Parallel crawling using `in_parallel`
+
+Kimurai can process web pages concurrently in one single line: `in_parallel(:parse_product, 3, urls: urls)`, where `:parse_product` is a method to process, `3` is count of threads and `urls:` is array of urls to crawl.
+
+```ruby
+# amazon_crawler.rb
+
+require 'kimurai'
+require 'kimurai/all'
+
+class AmazonCrawler < Kimurai::Base
+  @name = "amazon_crawler"
+  @driver = :mechanize
+  @start_urls = ["https://www.amazon.com/"]
+
+  def parse(response, url:, data: {})
+    browser.fill_in "field-keywords", with: "Web Scraping Books"
+    browser.click_on "Go"
+
+    # walk through pagination and collect products urls:
+    urls = []
+    loop do
+      response = browser.current_response
+      response.xpath("//li//a[contains(@class, 's-access-detail-page')]").each do |a|
+        urls << a[:href].sub(/ref=.+/, "")
+      end
+
+      browser.find(:xpath, "//a[@id='pagnNextLink']", wait: 1).click rescue break
+    end
+
+    # process all collected urls concurrently within 3 threads:
+    in_parallel(:parse_book_page, 3, urls: urls)
+  end
+
+  def parse_book_page(response, url:, data: {})
+    item = {}
+
+    item[:title] = response.xpath("//h1/span[@id]").text.squish
+    item[:url] = url
+    item[:price] = response.xpath("(//span[contains(@class, 'a-color-price')])[1]").text.squish.presence
+    item[:publisher] = response.xpath("//h2[text()='Product details']/following::b[text()='Publisher:']/following-sibling::text()[1]").text.squish.presence
+
+    save_to "books.json", item, format: :pretty_json
+  end
+end
+
+AmazonCrawler.start!
+```
+
+<details/>
+  <summary>Run: <code>$ ruby amazon_crawler.rb</code></summary>
+
+```
+D, [2018-08-06 12:21:48 +0400#1686] [Main: 47180432147960] DEBUG -- amazon_crawler: Session builder: driver gem required: mechanize
+D, [2018-08-06 12:21:48 +0400#1686] [Main: 47180432147960] DEBUG -- amazon_crawler: Session builder: created session instance
+I, [2018-08-06 12:21:48 +0400#1686] [Main: 47180432147960]  INFO -- amazon_crawler: Session: started get request to: https://www.amazon.com/
+D, [2018-08-06 12:21:48 +0400#1686] [Main: 47180432147960] DEBUG -- amazon_crawler: Session builder: created driver instance (mechanize)
+D, [2018-08-06 12:21:48 +0400#1686] [Main: 47180432147960] DEBUG -- amazon_crawler: Session: can't define driver_pid and driver_port for mechanize, not supported
+I, [2018-08-06 12:21:48 +0400#1686] [Main: 47180432147960]  INFO -- amazon_crawler: Session: a new session driver has been created: driver name: mechanize, pid: , port:
+I, [2018-08-06 12:21:54 +0400#1686] [Main: 47180432147960]  INFO -- amazon_crawler: Session: finished get request to: https://www.amazon.com/
+I, [2018-08-06 12:21:54 +0400#1686] [Main: 47180432147960]  INFO -- amazon_crawler: Stats visits: requests: 1, responses: 1
+
+I, [2018-08-06 12:21:58 +0400#1686] [Main: 47180432147960]  INFO -- amazon_crawler: Crawler: in_parallel: starting processing 53 urls within 3 threads
+D, [2018-08-06 12:21:58 +0400#1686] [Child: 47180448490460] DEBUG -- amazon_crawler: Session builder: driver gem required: mechanize
+D, [2018-08-06 12:21:58 +0400#1686] [Child: 47180448490460] DEBUG -- amazon_crawler: Session builder: created session instance
+I, [2018-08-06 12:21:58 +0400#1686] [Child: 47180448490460]  INFO -- amazon_crawler: Session: started get request to: https://www.amazon.com/Web-Scraping-Python-Collecting-Modern/dp/1491985577/
+D, [2018-08-06 12:21:58 +0400#1686] [Child: 47180448490460] DEBUG -- amazon_crawler: Session builder: created driver instance (mechanize)
+D, [2018-08-06 12:21:58 +0400#1686] [Child: 47180448490460] DEBUG -- amazon_crawler: Session: can't define driver_pid and driver_port for mechanize, not supported
+I, [2018-08-06 12:21:58 +0400#1686] [Child: 47180448490460]  INFO -- amazon_crawler: Session: a new session driver has been created: driver name: mechanize, pid: , port:
+D, [2018-08-06 12:21:59 +0400#1686] [Child: 47180448535660] DEBUG -- amazon_crawler: Session builder: driver gem required: mechanize
+D, [2018-08-06 12:21:59 +0400#1686] [Child: 47180448535660] DEBUG -- amazon_crawler: Session builder: created session instance
+I, [2018-08-06 12:21:59 +0400#1686] [Child: 47180448535660]  INFO -- amazon_crawler: Session: started get request to: https://www.amazon.com/Python-Web-Scraping-Cookbook-scraping/dp/1787285219/
+D, [2018-08-06 12:21:59 +0400#1686] [Child: 47180448535660] DEBUG -- amazon_crawler: Session builder: created driver instance (mechanize)
+D, [2018-08-06 12:21:59 +0400#1686] [Child: 47180448535660] DEBUG -- amazon_crawler: Session: can't define driver_pid and driver_port for mechanize, not supported
+I, [2018-08-06 12:21:59 +0400#1686] [Child: 47180448535660]  INFO -- amazon_crawler: Session: a new session driver has been created: driver name: mechanize, pid: , port:
+D, [2018-08-06 12:22:00 +0400#1686] [Child: 47180448251660] DEBUG -- amazon_crawler: Session builder: driver gem required: mechanize
+D, [2018-08-06 12:22:00 +0400#1686] [Child: 47180448251660] DEBUG -- amazon_crawler: Session builder: created session instance
+I, [2018-08-06 12:22:00 +0400#1686] [Child: 47180448251660]  INFO -- amazon_crawler: Session: started get request to: https://www.amazon.com/Practical-Web-Scraping-Data-Science/dp/1484235819/
+D, [2018-08-06 12:22:00 +0400#1686] [Child: 47180448251660] DEBUG -- amazon_crawler: Session builder: created driver instance (mechanize)
+D, [2018-08-06 12:22:00 +0400#1686] [Child: 47180448251660] DEBUG -- amazon_crawler: Session: can't define driver_pid and driver_port for mechanize, not supported
+I, [2018-08-06 12:22:00 +0400#1686] [Child: 47180448251660]  INFO -- amazon_crawler: Session: a new session driver has been created: driver name: mechanize, pid: , port:
+I, [2018-08-06 12:22:00 +0400#1686] [Child: 47180448490460]  INFO -- amazon_crawler: Session: finished get request to: https://www.amazon.com/Web-Scraping-Python-Collecting-Modern/dp/1491985577/
+I, [2018-08-06 12:22:00 +0400#1686] [Child: 47180448490460]  INFO -- amazon_crawler: Stats visits: requests: 4, responses: 2
+I, [2018-08-06 12:22:01 +0400#1686] [Child: 47180448490460]  INFO -- amazon_crawler: Session: started get request to: https://www.amazon.com/Web-Scraping-Python-Collecting-Modern/dp/1491910291/
+I, [2018-08-06 12:22:01 +0400#1686] [Child: 47180448535660]  INFO -- amazon_crawler: Session: finished get request to: https://www.amazon.com/Python-Web-Scraping-Cookbook-scraping/dp/1787285219/
+I, [2018-08-06 12:22:01 +0400#1686] [Child: 47180448535660]  INFO -- amazon_crawler: Stats visits: requests: 5, responses: 3
+I, [2018-08-06 12:22:01 +0400#1686] [Child: 47180448535660]  INFO -- amazon_crawler: Session: started get request to: https://www.amazon.com/Scraping-Python-Community-Experience-Distilled/dp/1782164367/
+I, [2018-08-06 12:22:02 +0400#1686] [Child: 47180448490460]  INFO -- amazon_crawler: Session: finished get request to: https://www.amazon.com/Web-Scraping-Python-Collecting-Modern/dp/1491910291/
+
+...
+
+I, [2018-08-06 12:22:29 +0400#1686] [Main: 47180432147960]  INFO -- amazon_crawler: Crawler: in_parallel: stopped processing 53 urls within 3 threads, total time: 30s
+I, [2018-08-06 12:22:29 +0400#1686] [Main: 47180432147960]  INFO -- amazon_crawler: Crawler: stopped: {:crawler_name=>"amazon_crawler", :status=>:completed, :environment=>"development", :start_time=>2018-08-06 12:21:48 +0400, :stop_time=>2018-08-06 12:22:29 +0400, :running_time=>"40s", :session_id=>nil, :visits=>{:requests=>54, :responses=>54, :requests_errors=>{}}, :error=>nil, :server=>{:hostname=>"my-pc", :ipv4=>"192.168.0.2", :process_pid=>1686}}
+```
+</details>
+
+<details/>
+  <summary>books.json</summary>
+
+```json
+[
+  {
+    "title": "Web Scraping with Python: Collecting More Data from the Modern Web2nd Edition",
+    "url": "https://www.amazon.com/Web-Scraping-Python-Collecting-Modern/dp/1491985577/",
+    "price": "$26.94",
+    "publisher": "O'Reilly Media; 2 edition (April 14, 2018)",
+    "position": 1
+  },
+  {
+    "title": "Python Web Scraping Cookbook: Over 90 proven recipes to get you scraping with Python, micro services, Docker and AWS",
+    "url": "https://www.amazon.com/Python-Web-Scraping-Cookbook-scraping/dp/1787285219/",
+    "price": "$39.99",
+    "publisher": "Packt Publishing - ebooks Account (February 9, 2018)",
+    "position": 2
+  },
+  {
+    "title": "Web Scraping with Python: Collecting Data from the Modern Web1st Edition",
+    "url": "https://www.amazon.com/Web-Scraping-Python-Collecting-Modern/dp/1491910291/",
+    "price": "$15.75",
+    "publisher": "O'Reilly Media; 1 edition (July 24, 2015)",
+    "position": 3
+  },
+
+  ...
+
+  {
+    "title": "Instant Web Scraping with Java by Ryan Mitchell (2013-08-26)",
+    "url": "https://www.amazon.com/Instant-Scraping-Java-Mitchell-2013-08-26/dp/B01FEM76X2/",
+    "price": "$35.82",
+    "publisher": "Packt Publishing (2013-08-26) (1896)",
+    "position": 53
+  }
+]
+```
+</details><br>
+
+Note that `save_to` and `unique?` helpers are thread-safe (protected by [Mutex](https://ruby-doc.org/core-2.5.1/Mutex.html)) and can be freely used inside threads.
+
+`in_parallel` can take additional options:
+* `data:` pass with urls custom data hash: `in_parallel(:method, 3, urls: urls, data: { category: "Scraping" })`
+* `delay:` set delay between requests: `in_parallel(:method, 3, urls: urls, delay: 2)`. Delay can be `Integer`, `Float` or `Range` (`2..5`). In case of a range, delay number will be chosen randomly for each request: `rand (2..5) # => 3`
+* `driver:` set custom driver than a default one: `in_parallel(:method, 3, urls: urls, driver: :poltergeist_phantomjs)`
+* `config:` pass custom options for config (see config section)
+
+### Active Support included
+
+You can use all the power of familiar [Rails core-ext methods](https://guides.rubyonrails.org/active_support_core_extensions.html#loading-all-core-extensions) for scraping inside Kimurai. Especially take a look at [squish](https://apidock.com/rails/String/squish), [truncate_words](https://apidock.com/rails/String/truncate_words), [titleize](https://apidock.com/rails/String/titleize), [remove](https://apidock.com/rails/String/remove), [present?](https://guides.rubyonrails.org/active_support_core_extensions.html#blank-questionmark-and-present-questionmark) and [presence](https://guides.rubyonrails.org/active_support_core_extensions.html#presence).
+
+### Schedule crawlers using Cron
+
+1) Inside crawler file directory generate [Whenever](https://github.com/javan/whenever) config: `$ kimurai generate schedule`.
+
+<details/>
+  <summary><code>schedule.rb</code></summary>
+
+```ruby
+### Settings ###
+require 'tzinfo'
+
+# Export current PATH to the cron
+env :PATH, ENV["PATH"]
+
+# Use 24 hour format when using `at:` option
+set :chronic_options, hours24: true
+
+# Use local_to_utc helper to setup execution time using your local timezone instead
+# of server's timezone (which is probably and should be UTC, to check run `$ timedatectl`).
+# Also maybe you'll want to set same timezone in kimurai as well (`Kimurai.configuration.time_zone =`)
+# to have crawlers logs in specific time zone format
+# Example usage of helper:
+# every 1.day, at: local_to_utc("7:00", zone: "Europe/Moscow") do
+#   start "google_crawler.com", output: "log/google_crawler.com.log"
+# end
+def local_to_utc(time_string, zone:)
+  TZInfo::Timezone.get(zone).local_to_utc(Time.parse(time))
+end
+
+# Note: by default Whenever exports cron commands with :environment == "production".
+# Note: Whenever can only append log data to a log file (>>). If you want
+# to overwrite (>) log file before each run, pass lambda:
+# start "google_crawler.com", output: -> { "> log/google_crawler.com.log 2>&1" }
+
+# project job types
+job_type :start,  "cd :path && KIMURAI_ENV=:environment bundle exec kimurai start :task :output"
+job_type :runner, "cd :path && KIMURAI_ENV=:environment bundle exec kimurai runner --jobs :task :output"
+
+# single file job type
+job_type :single, "cd :path && KIMURAI_ENV=:environment ruby :task :output"
+# single with bundle exec
+job_type :single_bundle, "cd :path && KIMURAI_ENV=:environment bundle exec ruby :task :output"
+
+### Schedule ###
+# Usage (check examples here https://github.com/javan/whenever#example-schedulerb-file):
+# every 1.day do
+  # Example to schedule single crawler in the project:
+  # start "google_crawler.com", output: "log/google_crawler.com.log"
+
+  # Example to schedule all crawlers in the project using runner. Each crawler will write
+  # it's own output to the `log/crawler_name.log` file (handled by runner itself).
+  # Runner output will be written to log/runner.log file.
+  # Argument number it's a count of concurrent jobs:
+  # runner 3, output:"log/runner.log"
+
+  # Example to schedule single crawler file (without project)
+  # single "single_crawler.rb", output: "single_crawler.log"
+# end
+
+### How to set cron schedule ###
+# Run: `$ whenever --update-crontab --load-file config/schedule.rb`.
+# If you don't have whenever command, install gem: `$ gem install whenever`.
+
+### How to cancel schedule ###
+# Run: `$ whenever --clear-crontab --load-file config/schedule.rb`.
+```
+</details><br>
+
+2) Add at the bottom of file `schedule.rb` following code:
+
+```ruby
+every 1.day, at: "7:00" do
+  single "example_crawler.rb", output: "example_crawler.log"
+end
+```
+
+3) Run: `$ whenever --update-crontab --load-file schedule.rb`. Done!
+
+You can check Whenever examples [here](https://github.com/javan/whenever#example-schedulerb-file). To cancel schedule, run: `$ whenever --clear-crontab --load-file schedule.rb`.
+
+### Automated sever setup and deployment
+> EXPERIMENTAL
+
+#### Setup
+You can automatically setup [required environment](#installation) for Kimurai on the remote server (currently there is only Ubuntu Server 18.04 support) using `$ kimurai setup` command. `setup` will perform installation of: latest Ruby with Rbenv, browsers with webdrivers and in additional databases clients (only clients) for MySQL, Postgres and MongoDB (so you can connect to a remote database from ruby).
+
+> To perform remote server setup, [Ansible](https://github.com/ansible/ansible) is required **on a desktop** machine (to install: Ubuntu: `$ sudo apt install ansible`, Mac OS X: `$ brew install ansible`)
+
+Example:
+
+```bash
+$ kimurai setup deploy@123.123.123.123 --ask-sudo --ssh-key-path path/to/private_key
 ```
 
 

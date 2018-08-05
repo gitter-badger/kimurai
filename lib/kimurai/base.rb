@@ -229,7 +229,7 @@ module Kimurai
       Log.error "Pipeline: full error: #{e.full_message}"
     end
 
-    def in_parallel(handler, threads_count, urls:, data: {}, driver: self.class.driver, config: {})
+    def in_parallel(handler, threads_count, urls:, data: {}, delay: nil, driver: self.class.driver, config: {})
       parts = urls.in_sorted_groups(threads_count, false)
       urls_count = urls.size
 
@@ -244,9 +244,9 @@ module Kimurai
           crawler = self.class.new(driver: driver, config: config)
           part.each do |url_data|
             if url_data.class == Hash
-              crawler.request_to(handler, url_data)
+              crawler.request_to(handler, delay, url_data)
             else
-              crawler.request_to(handler, url: url_data, data: data)
+              crawler.request_to(handler, delay, url: url_data, data: data)
             end
           end
         rescue => e

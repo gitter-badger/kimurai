@@ -24,5 +24,9 @@ module Kimurai
     def save_to(path, item, format:, position: true)
       SimpleSaver.save(item, path: path, format: format, position: position)
     end
+
+    def unique?(data)
+      UniqChecker.unique?(*data.first)
+    end
   end
 end

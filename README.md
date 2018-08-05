@@ -638,6 +638,9 @@ unique?(product_url: "http://example.com/product_1")
 
 # `id` scope
 unique?(id: 324234232)
+
+# `custom` scope
+unique?(custom: "Lorem Ipsum")
 ```
 
 
@@ -649,9 +652,6 @@ unique?(id: 324234232)
 <!-- ## Custom configuration -->
 
 <!-- @config -->
-
-
-
 
 
 <!-- helpers, uniq helper with to_id -->

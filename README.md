@@ -78,7 +78,6 @@ I, [2018-08-04 13:09:23 +0400#24700] [Main: 47383751083520]  INFO -- github_craw
 ```
 </details>
 
-
 <details/>
   <summary>results.json</summary>
 
@@ -122,9 +121,7 @@ I, [2018-08-04 13:09:23 +0400#24700] [Main: 47383751083520]  INFO -- github_craw
   }
 ]
 ```
-</details>
-
----
+</details><br>
 
 Okay, that was easy. How about javascript rendered websites with dynamic HTML? Lets scrape a page with infinite scroll:
 
@@ -186,9 +183,7 @@ I, [2018-08-04 17:54:45 +0400#29308] [Main: 47115312711160]  INFO -- infinite_sc
 I, [2018-08-04 17:54:45 +0400#29308] [Main: 47115312711160]  INFO -- infinite_scroll_crawler: > All posts from page: 1a - Infinite Scroll full page demo; 1b - RGB Schemes logo in Computer Arts; 2a - RGB Schemes logo; 2b - Masonry gets horizontalOrder; 2c - Every vector 2016; 3a - Logo Pizza delivered; 3b - Some CodePens; 3c - 365daysofmusic.com; 3d - Holograms; 4a - Huebee: 1-click color picker; 4b - Word is Flickity is good; Flickity v2 released: groupCells, adaptiveHeight, parallax; New tech gets chatter; Isotope v3 released: stagger in, IE8 out; Packery v2 released
 I, [2018-08-04 17:54:45 +0400#29308] [Main: 47115312711160]  INFO -- infinite_scroll_crawler: Crawler: stopped: {:crawler_name=>"infinite_scroll_crawler", :status=>:completed, :environment=>"development", :start_time=>2018-08-04 17:54:14 +0400, :stop_time=>2018-08-04 17:54:45 +0400, :running_time=>"31s", :session_id=>nil, :visits=>{:requests=>1, :responses=>1, :requests_errors=>{}}, :error=>nil, :server=>{:hostname=>"my-pc", :ipv4=>"192.168.0.2", :process_pid=>29308}}
 ```
-</details>
-
----
+</details><br>
 
 ## Features
 
@@ -208,6 +203,7 @@ I, [2018-08-04 17:54:45 +0400#29308] [Main: 47115312711160]  INFO -- infinite_sc
 * Command-line runner to run all project crawlers one by one or in parallel
 * Built-in helpers to make scraping easy, like `save_to` (save items to JSON, JSON lines, CSV or YAML formats) or `absolute_url/normalize_url`
 * `at_start` and `at_stop` callbacks which allows to make something useful (like sending notification) before crawler started or after crawler has been stopped (available full run info: requests/items count, total time, etc)
+
 
 ## Installation
 
@@ -390,6 +386,17 @@ brew install mongodb
 
 
 ## Getting To Know
+### Available drivers
+Kimurai has support for following drivers and mostly can switch between them without need to rewrite any code:
+
+* `:mechanize` - [pure Ruby fake http browser](https://github.com/sparklemotion/mechanize). Mechanize can't render javascript and don't know what DOM is it. It only can parse original HTML code of a page. Because of it, mechanize much faster, takes much less memory and in general much more stable than any real browser. Use mechanize if you can do it, and the website doesn't use javascript to render any meaningful parts of its structure. Still, because mechanize trying to mimic a real browser, it supports almost all Capybara's [methods to interact with a web page](http://cheatrags.com/capybara) (filling forms, clicking buttons, checkboxes, etc).
+* `:poltergeist_phantomjs` - [PhantomJS headless browser](https://github.com/ariya/phantomjs), can render javascript. In general, PhantomJS still faster than Headless Chrome (and headless firefox). PhantomJS has memory leakage, but Kimurai has memory control feature so you shouldn't consider it as a problem. Also, some websites can recognize PhantomJS and block access to them. Like mechanize (and unlike selenium drivers) `:poltergeist_phantomjs` can freely rotate proxies and change headers _on the fly_ (See Config section).
+* `:selenium_chrome` Chrome in headless mode driven by selenium. Modern headless browser solution with proper javascript rendering.
+* `:selenium_firefox` Firefox in headless mode driven by selenium. Usually takes more memory than other drivers, but sometimes can be useful.
+
+Tip: add `HEADLESS=false` env variable before command (`$ HEADLESS=false ruby crawler.rb`) to run browser in normal (not headless) mode and see it's window (only for selenium-like drivers).
+
+
 ### Minimum required crawler structure
 
 ```ruby
@@ -409,15 +416,22 @@ SimpleCrawler.start!
 ```
 
 Where:
-* class variable `@name` it's a name of crawler. You can omit name if use single file crawler
+* `@name` name of crawler. You can omit name if use single file crawler
 * `@driver` driver for crawler
 * `@start_urls` array of start urls to process one by one inside `parse` method
-* Method `parse` is the starting method, should always present in crawler class
+* Method `parse` is the start method, should be always present in crawler class
 
-Each instance crawler method which you want to access from `request_to` should take following arguments:
-* `response` is [Nokogiri::HTML::Document](https://www.rubydoc.info/github/sparklemotion/nokogiri/Nokogiri/HTML/Document) object. Contains parsed HTML code from [Capybara::Session](https://www.rubydoc.info/github/jnicklas/capybara/Capybara/Session) [#body method](https://www.rubydoc.info/github/jnicklas/capybara/Capybara%2FSession:body) of currently processing url. **You can query `response` using [XPath or CSS selectors.](https://www.rubydoc.info/github/sparklemotion/nokogiri/Nokogiri/XML/Searchable)**
-* `url` current processing url (string)
-* `data` hash which can contain something useful. It uses to pass data between requests.
+
+### Method arguments `response`, `url` and `data`
+
+```ruby
+def parse(response, url:, data: {})
+end
+```
+
+* `response` ([Nokogiri::HTML::Document](https://www.rubydoc.info/github/sparklemotion/nokogiri/Nokogiri/HTML/Document) object) Contains parsed HTML code of processed webpage
+* `url` (String) url of processed webpage
+* `data` (Hash) uses to pass data between requests
 
 <details/>
   <summary><strong>Example how to use <code>data</code></strong></summary>
@@ -450,22 +464,17 @@ class ProductsCrawler < Kimurai::Base
 end
 
 ```
-</details>
+</details><br>
 
-### Available drivers
+**You can query `response` using [XPath or CSS selectors](https://www.rubydoc.info/github/sparklemotion/nokogiri/Nokogiri/XML/Searchable)**. Check Nokogiri tutorials to understand how to work with `response`:
+* [Parsing HTML with Nokogiri](http://ruby.bastardsbook.com/chapters/html-parsing/) - ruby.bastardsbook.com
+* [HOWTO parse HTML with Ruby & Nokogiri](https://readysteadycode.com/howto-parse-html-with-ruby-and-nokogiri) - readysteadycode.com
+* [Instance Method Summary](https://www.rubydoc.info/github/sparklemotion/nokogiri/Nokogiri/HTML/Document) (documentation) - rubydoc.info
 
-Kimurai has support for following drivers and mostly can switch between them without need to rewrite any code:
-
-* `:mechanize` - [pure Ruby fake http browser](https://github.com/sparklemotion/mechanize). Mechanize can't render javascript and don't know what DOM is it. It only can parse original HTML code of a page. Because of it, mechanize much faster, takes much less memory and in general much more stable than any real browser. Use mechanize if you can do it, and the website doesn't use javascript to render any meaningful parts of its structure. Still, because mechanize trying to mimic a real browser, it supports almost all Capybara's [methods to interact with a web page](http://cheatrags.com/capybara) (filling forms, clicking buttons, checkboxes, etc).
-* `:poltergeist_phantomjs` - [PhantomJS headless browser](https://github.com/ariya/phantomjs), can render javascript. In general, PhantomJS still faster than Headless Chrome (and headless firefox). PhantomJS has memory leakage, but Kimurai has memory control feature so you shouldn't consider it as a problem. Also, some websites can recognize PhantomJS and block access to them. Like mechanize (and unlike selenium drivers) `:poltergeist_phantomjs` can freely rotate proxies and change headers _on the fly_ (See Config section).
-* `:selenium_chrome` Chrome in headless mode driven by selenium. Modern headless browser solution with proper javascript rendering.
-* `:selenium_firefox` Firefox in headless mode driven by selenium. Usually takes more memory than other drivers, but sometimes can be useful.
-
-Tip: add `HEADLESS=false` env variable before command (`$ HEADLESS=false ruby crawler.rb`) to run browser in normal (not headless) mode and see it's window (only for selenium-like drivers).
 
 ### `browser` object
 
-From any crawler instance method there is available `browser` object, which is [Capybara::Session](https://www.rubydoc.info/github/jnicklas/capybara/Capybara/Session) instance and uses to process requests. Usually you don't need to touch it directly, because there is `response` (see above) which contains page response after it was loaded.
+From any crawler instance method there is available `browser` object, which is [Capybara::Session](https://www.rubydoc.info/github/jnicklas/capybara/Capybara/Session) object and uses to process requests and get page response (`current_response` method). Usually you don't need to touch it directly, because there is `response` (see above) which contains page response after it was loaded.
 
 But if you need to interact with a page (like filling form fields, clicking elements, checkboxes, etc) `browser` is ready for you:
 
@@ -977,7 +986,7 @@ I, [2018-08-06 12:22:29 +0400#1686] [Main: 47180432147960]  INFO -- amazon_crawl
 ```
 </details><br>
 
-Note that `save_to` and `unique?` helpers are thread-safe (protected by [Mutex](https://ruby-doc.org/core-2.5.1/Mutex.html)) and can be freely used inside threads.
+> Note that [save_to](#save_to-helper) and [unique?](#skip-duplicates-unique-helper) helpers are thread-safe (protected by [Mutex](https://ruby-doc.org/core-2.5.1/Mutex.html)) and can be freely used inside threads.
 
 `in_parallel` can take additional options:
 * `data:` pass with urls custom data hash: `in_parallel(:method, 3, urls: urls, data: { category: "Scraping" })`
@@ -991,7 +1000,7 @@ You can use all the power of familiar [Rails core-ext methods](https://guides.ru
 
 ### Schedule crawlers using Cron
 
-1) Inside crawler file directory generate [Whenever](https://github.com/javan/whenever) config: `$ kimurai generate schedule`.
+1) Inside crawler directory generate [Whenever](https://github.com/javan/whenever) config: `$ kimurai generate schedule`.
 
 <details/>
   <summary><code>schedule.rb</code></summary>
@@ -1070,7 +1079,7 @@ end
 You can check Whenever examples [here](https://github.com/javan/whenever#example-schedulerb-file). To cancel schedule, run: `$ whenever --clear-crontab --load-file schedule.rb`.
 
 ### Automated sever setup and deployment
-> EXPERIMENTAL
+> **EXPERIMENTAL**
 
 #### Setup
 You can automatically setup [required environment](#installation) for Kimurai on the remote server (currently there is only Ubuntu Server 18.04 support) using `$ kimurai setup` command. `setup` will perform installation of: latest Ruby with Rbenv, browsers with webdrivers and in additional databases clients (only clients) for MySQL, Postgres and MongoDB (so you can connect to a remote database from ruby).
@@ -1106,7 +1115,7 @@ Gemfile Gemfile.lock .git/ config/
 $ kimurai deploy deploy@123.123.123.123 --ssh-key-path path/to/private_key --repo-key-path path/to/repo_private_key
 ```
 
-CLI options: same like for [setup](#setup) command (except `--ask-sudo`) +
+CLI options: same like for [setup](#setup) command (except `--ask-sudo`) plus
 * `--repo-url` provide custom repo url (`--repo-url git@bitbucket.org:username/repo_name.git`), otherwise current `origin/master` will be taken (output from `$ git remote get-url origin`)
 * `--repo-key-path` if git repository is private, authorization is required to pull the code on the remote server. Use this option to provide a private repository SSH key. You can omit it if required key already added to keychain on your desktop (same like with `--ssh-key-path` option)
 

@@ -1075,13 +1075,42 @@ You can check Whenever examples [here](https://github.com/javan/whenever#example
 #### Setup
 You can automatically setup [required environment](#installation) for Kimurai on the remote server (currently there is only Ubuntu Server 18.04 support) using `$ kimurai setup` command. `setup` will perform installation of: latest Ruby with Rbenv, browsers with webdrivers and in additional databases clients (only clients) for MySQL, Postgres and MongoDB (so you can connect to a remote database from ruby).
 
-> To perform remote server setup, [Ansible](https://github.com/ansible/ansible) is required **on a desktop** machine (to install: Ubuntu: `$ sudo apt install ansible`, Mac OS X: `$ brew install ansible`)
+> To perform remote server setup, [Ansible](https://github.com/ansible/ansible) is required **on the desktop** machine (to install: Ubuntu: `$ sudo apt install ansible`, Mac OS X: `$ brew install ansible`)
 
 Example:
 
 ```bash
 $ kimurai setup deploy@123.123.123.123 --ask-sudo --ssh-key-path path/to/private_key
 ```
+
+CLI options:
+* `--ask-sudo` pass this option to ask sudo (user) password for system-wide installation of packages (`apt install`)
+* `--ssh-key-path path/to/private_key` authorization on the server using private ssh key. You can omit it if required key already [added to keychain](https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/#adding-your-ssh-key-to-the-ssh-agent) on your desktop (Ansible uses [SSH agent forwarding](https://developer.github.com/v3/guides/using-ssh-agent-forwarding/))
+* `--ask-auth-pass` authorization on the server using user password, alternative option to `--ssh-key-path`.
+* `-p port_number` custom port for ssh connection (`-p 2222`)
+
+> You can check setup playbook [here](lib/kimurai/automation/setup.yml)
+
+#### Deploy
+
+After successful `setup` you can deploy a crawler to the server using `$ kimurai deploy` command. On each deploy there are performing several tasks: 1) pull repo from remote origin to `~/repo_name` directory 2) run `bundle install` 3) Update crontab `whenever --update-crontab` (to update crawler schedule from schedule.rb file).
+
+Before `deploy` make sure that inside crawler directory you have: 1) git repository with remote origin (bitbucket, github, etc.) 2) `Gemfile` 3) schedule.rb inside subfolder `config` (`config/schedule.rb`).
+
+Example:
+
+```bash
+$ ls -a
+Gemfile Gemfile.lock .git/ config/
+
+$ kimurai deploy deploy@123.123.123.123 --ssh-key-path path/to/private_key --repo-key-path path/to/repo_private_key
+```
+
+CLI options: same like for [setup](#setup) command (except `--ask-sudo`) +
+* `--repo-url` provide custom repo url (`--repo-url git@bitbucket.org:username/repo_name.git`), otherwise current `origin/master` will be taken (output from `$ git remote get-url origin`)
+* `--repo-key-path` if git repository is private, authorization is required to pull the code on the remote server. Use this option to provide a private repository SSH key. You can omit it if required key already added to keychain on your desktop (same like with `--ssh-key-path` option)
+
+> You can check deploy playbook [here](lib/kimurai/automation/deploy.yml)
 
 
 <!-- ### parallel crawling (), delay -->

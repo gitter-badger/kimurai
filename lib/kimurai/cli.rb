@@ -45,7 +45,7 @@ module Kimurai
     option "ask-auth-pass", type: :boolean, banner: "Auth using password"
     option "ssh-key-path", type: :string, banner: "Auth using ssh key"
     option "repo-url", type: :string, banner: "Repo url"
-    option "git-key-path", type: :string, banner: "SSH key for a git repo"
+    option "repo-key-path", type: :string, banner: "SSH key for a git repo"
     def deploy(user_host)
       if !`git status --short`.empty?
         raise "Please commit first your changes"
@@ -57,7 +57,7 @@ module Kimurai
       repo_name = repo_url[/\/([^\/]*)\.git/i, 1]
 
       command = get_ansible_command(user_host, playbook: "deploy",
-        vars: { repo_url: repo_url, repo_name: repo_name, git_key_path: options["git-key-path"] }
+        vars: { repo_url: repo_url, repo_name: repo_name, repo_key_path: options["repo-key-path"] }
       )
 
       pid = spawn *command
@@ -194,7 +194,7 @@ module Kimurai
       if options["ask-auth-pass"]
         unless Cliver.detect("sshpass")
           raise "Can't find `sshpass` executable for password authentication, to install: " \
-            "OS X: `$ brew install http://git.io/sshpass.rb`, Ubuntu: `$ sudo apt install sshpass`"
+            "Mac OS X: `$ brew install http://git.io/sshpass.rb`, Ubuntu: `$ sudo apt install sshpass`"
         end
 
         command.push "--ask-pass"

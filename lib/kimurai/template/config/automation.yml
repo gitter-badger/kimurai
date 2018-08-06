@@ -10,4 +10,4 @@ setup:
 # settings for deploy command, you can use cli options as well (--repo-url, --git-key-path)
 deploy:
   # repo_url: git@bitbucket.org:username/repo_name.git
-  # git_key_path: ~/.ssh/id_rsa
+  # repo_key_path: ~/.ssh/id_rsa

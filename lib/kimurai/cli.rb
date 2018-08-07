@@ -129,7 +129,7 @@ module Kimurai
 
       klass.preload!
       instance =
-        if driver = options["driver"]&.to_sym
+        if driver = options["driver"]&.to_sym&.delete(":")
           klass.new(driver: driver)
         else
           klass.new

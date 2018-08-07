@@ -210,6 +210,7 @@ I, [2018-08-04 17:54:45 +0400#29308] [Main: 47115312711160]  INFO -- infinite_sc
   * [Table of Contents](#table-of-contents)
   * [Installation](#installation)
   * [Getting to Know](#getting-to-know)
+    * [Interactive console](#interactive-console)
     * [Available drivers](#available-drivers)
     * [Minimum required crawler structure](#minimum-required-crawler-structure)
     * [Method arguments response, url and data](#method-arguments-response-url-and-data)
@@ -413,6 +414,75 @@ brew install mongodb
 
 
 ## Getting to Know
+### Interactive console
+Before you get to know all Kimurai features, there is `$ kimurai console` command which is an interactive console where you can try and debug your scraping code very quickly, without having to run any crawler (yes, it's like [Scrapy shell](https://doc.scrapy.org/en/latest/topics/shell.html#topics-shell)).
+
+```bash
+$ kimurai console --driver selenium_chrome --url https://github.com/vfreefly/kimurai
+```
+
+<details/>
+  <summary>Show output</summary>
+
+```
+$ kimurai console --driver selenium_chrome --url https://github.com/vfreefly/kimurai
+
+D, [2018-08-07 22:55:39 +0400#28225] [Main: 46928107103740] DEBUG -- : Session builder: driver gem required: selenium
+D, [2018-08-07 22:55:39 +0400#28225] [Main: 46928107103740] DEBUG -- : Session builder: created session instance
+I, [2018-08-07 22:55:39 +0400#28225] [Main: 46928107103740]  INFO -- : Session: started get request to: https://github.com/vfreefly/kimurai
+D, [2018-08-07 22:55:39 +0400#28225] [Main: 46928107103740] DEBUG -- : Session builder: enabled native headless mode for selenium_chrome
+D, [2018-08-07 22:55:39 +0400#28225] [Main: 46928107103740] DEBUG -- : Session builder: created driver instance (selenium_chrome)
+I, [2018-08-07 22:55:39 +0400#28225] [Main: 46928107103740]  INFO -- : Session: a new session driver has been created: driver name: selenium_chrome, pid: 28261, port: 9515
+I, [2018-08-07 22:55:42 +0400#28225] [Main: 46928107103740]  INFO -- : Session: finished get request to: https://github.com/vfreefly/kimurai
+I, [2018-08-07 22:55:42 +0400#28225] [Main: 46928107103740]  INFO -- : Stats visits: requests: 1, responses: 1
+D, [2018-08-07 22:55:42 +0400#28225] [Main: 46928107103740] DEBUG -- : Session: current_memory: 258068
+
+    181: def console(response = nil, url: nil, data: {})
+ => 182:   binding.pry
+    183: end
+
+[1] pry(#<Kimurai::Base>)> response.xpath("//title").text
+=> "GitHub - vfreefly/kimurai: Kimurai is a modern web scraping framework written in Ruby which works out of box with headless chromium/firefox, phantomjs, or simple HTTP requests and allows to scrape and interact with javascript rendered websites"
+
+[2] pry(#<Kimurai::Base>)> ls
+Kimurai::Base#methods: browser  console  request_to
+instance variables: @browser  @config  @driver  @pipelines
+locals: _  __  _dir_  _ex_  _file_  _in_  _out_  _pry_  data  response  url
+
+[3] pry(#<Kimurai::Base>)> ls response
+Nokogiri::XML::PP::Node#methods: inspect  pretty_print
+Nokogiri::XML::Searchable#methods: %  /  at  at_css  at_xpath  css  search  xpath
+Enumerable#methods:
+  all?         collect         drop        each_with_index   find_all    grep_v    lazy    member?    none?      reject        slice_when  take_while  without
+  any?         collect_concat  drop_while  each_with_object  find_index  group_by  many?   min        one?       reverse_each  sort        to_a        zip
+  as_json      count           each_cons   entries           first       include?  map     min_by     partition  select        sort_by     to_h
+  chunk        cycle           each_entry  exclude?          flat_map    index_by  max     minmax     pluck      slice_after   sum         to_set
+  chunk_while  detect          each_slice  find              grep        inject    max_by  minmax_by  reduce     slice_before  take        uniq
+Nokogiri::XML::Node#methods:
+  <=>                   append_class       classes                 document?             has_attribute?      matches?          node_name=        processing_instruction?  to_str
+  ==                    attr               comment?                each                  html?               name=             node_type         read_only?               to_xhtml
+  >                     attribute          content                 elem?                 inner_html          namespace=        parent=           remove                   traverse
+  []                    attribute_nodes    content=                element?              inner_html=         namespace_scopes  parse             remove_attribute         unlink
+  []=                   attribute_with_ns  create_external_subset  element_children      inner_text          namespaced_key?   path              remove_class             values
+  accept                before             create_internal_subset  elements              internal_subset     native_content=   pointer_id        replace                  write_html_to
+  add_class             blank?             css_path                encode_special_chars  key?                next              prepend_child     set_attribute            write_to
+  add_next_sibling      cdata?             decorate!               external_subset       keys                next=             previous          text                     write_xhtml_to
+  add_previous_sibling  child              delete                  first_element_child   lang                next_element      previous=         text?                    write_xml_to
+  after                 children           description             fragment?             lang=               next_sibling      previous_element  to_html                  xml?
+  ancestors             children=          do_xinclude             get_attribute         last_element_child  node_name         previous_sibling  to_s
+Nokogiri::XML::Document#methods:
+  <<         canonicalize  collect_namespaces  create_comment  create_entity     decorate    document  encoding   errors   name        remove_namespaces!  root=  to_java  url       version
+  add_child  clone         create_cdata        create_element  create_text_node  decorators  dup       encoding=  errors=  namespaces  root                slop!  to_xml   validate
+Nokogiri::HTML::Document#methods: fragment  meta_encoding  meta_encoding=  meta_robots  nofollow?  noindex?  serialize  title  title=  type
+instance variables: @decorators  @errors  @node_cache
+
+[4] pry(#<Kimurai::Base>)> exit
+$
+
+```
+</details>
+
+
 ### Available drivers
 Kimurai has support for following drivers and mostly can switch between them without need to rewrite any code:
 

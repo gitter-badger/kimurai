@@ -3,6 +3,9 @@ Kimurai.configure do |config|
   # If you would like to disable it, set `colorize_logger` to false.
   # config.colorize_logger = false
 
+  # Logger level for default logger:
+  # config.log_level = :info
+
   # custom logger (you can use logstash for example with multiple sources)
   # config.logger = Logger.new(STDOUT)
 

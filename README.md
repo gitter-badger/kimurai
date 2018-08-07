@@ -204,6 +204,33 @@ I, [2018-08-04 17:54:45 +0400#29308] [Main: 47115312711160]  INFO -- infinite_sc
 * Built-in helpers to make scraping easy, like `save_to` (save items to JSON, JSON lines, CSV or YAML formats) or `absolute_url/normalize_url`
 * `at_start` and `at_stop` callbacks which allows to make something useful (like sending notification) before crawler started or after crawler has been stopped (available full run info: requests/items count, total time, etc)
 
+## Table of Contents
+* [Kimurai](#kimurai)
+  * [Features](#features)
+  * [Table of Contents](#table-of-contents)
+  * [Installation](#installation)
+  * [Getting to Know](#getting-to-know)
+    * [Available drivers](#available-drivers)
+    * [Minimum required crawler structure](#minimum-required-crawler-structure)
+    * [Method arguments response, url and data](#method-arguments-response-url-and-data)
+    * [browser object](#browser-object)
+    * [request_to method](#request_to-method)
+    * [save_to helper](#save_to-helper)
+    * [Skip duplicates, unique? helper](#skip-duplicates-unique-helper)
+    * [at_start and at_stop callbacks](#at_start-and-at_stop-callbacks)
+    * [KIMURAI_ENV](#kimurai_env)
+    * [Parallel crawling using in_parallel](#parallel-crawling-using-in_parallel)
+    * [Active Support included](#active-support-included)
+    * [Schedule crawlers using Cron](#schedule-crawlers-using-cron)
+    * [Configuration options](#configuration-options)
+    * [Automated sever setup and deployment](#automated-sever-setup-and-deployment)
+      * [Setup](#setup)
+      * [Deploy](#deploy)
+  * [Crawler @config](#crawler-config)
+    * [All available @config options](#all-available-config-options)
+    * [@config settings inheritance](#config-settings-inheritance)
+  * [Project mode](#project-mode)
+  * [License](#license)
 
 ## Installation
 
@@ -385,7 +412,7 @@ brew install mongodb
 </details>
 
 
-## Getting To Know
+## Getting to Know
 ### Available drivers
 Kimurai has support for following drivers and mostly can switch between them without need to rewrite any code:
 
@@ -1012,7 +1039,7 @@ I, [2018-08-06 12:22:29 +0400#1686] [Main: 47180432147960]  INFO -- amazon_crawl
 * `data:` pass with urls custom data hash: `in_parallel(:method, 3, urls: urls, data: { category: "Scraping" })`
 * `delay:` set delay between requests: `in_parallel(:method, 3, urls: urls, delay: 2)`. Delay can be `Integer`, `Float` or `Range` (`2..5`). In case of a range, delay number will be chosen randomly for each request: `rand (2..5) # => 3`
 * `driver:` set custom driver than a default one: `in_parallel(:method, 3, urls: urls, driver: :poltergeist_phantomjs)`
-* `config:` pass custom options for config (see config section)
+* `config:` pass custom options to config (see [config section](#crawler-config))
 
 ### Active Support included
 
@@ -1142,18 +1169,17 @@ CLI options:
 
 #### Deploy
 
-After successful `setup` you can deploy a crawler to the server using `$ kimurai deploy` command. On each deploy there are performing several tasks: 1) pull repo from remote origin to `~/repo_name` directory 2) run `bundle install` 3) Update crontab `whenever --update-crontab` (to update crawler schedule from schedule.rb file).
+After successful `setup` you can deploy a crawler to the server using `$ kimurai deploy` command. On each deploy there are performing several tasks: 1) pull repo from remote origin to `~/repo_name` user directory 2) run `bundle install` 3) Update crontab `whenever --update-crontab` (to update crawler schedule from schedule.rb file).
 
 Before `deploy` make sure that inside crawler directory you have: 1) git repository with remote origin (bitbucket, github, etc.) 2) `Gemfile` 3) schedule.rb inside subfolder `config` (`config/schedule.rb`).
 
 Example:
 
 ```bash
-$ ls -a
 $ kimurai deploy deploy@123.123.123.123 --ssh-key-path path/to/private_key --repo-key-path path/to/repo_private_key
 ```
 
-CLI options: same like for [setup](#setup) command (except `--ask-sudo`), plus
+CLI options: _same like for [setup](#setup) command_ (except `--ask-sudo`), plus
 * `--repo-url` provide custom repo url (`--repo-url git@bitbucket.org:username/repo_name.git`), otherwise current `origin/master` will be taken (output from `$ git remote get-url origin`)
 * `--repo-key-path` if git repository is private, authorization is required to pull the code on the remote server. Use this option to provide a private repository SSH key. You can omit it if required key already added to keychain on your desktop (same like with `--ssh-key-path` option)
 
@@ -1326,6 +1352,8 @@ end
 
 Here, `@config` of `CustomCrawler` will be _[deep merged](https://apidock.com/rails/Hash/deep_merge)_ with `ApplicationCrawler` config, so `CustomCrawler` will keep all inherited options with only `delay` updated.
 
+
+## Project mode
 
 <!-- <details/>
   <summary>List details</summary>

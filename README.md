@@ -480,8 +480,11 @@ instance variables: @decorators  @errors  @node_cache
 $
 
 ```
-</details>
+</details><br>
 
+CLI options:
+* `--driver` (optional) [driver](#available-drivers) to use. Default is `mechanize`
+* `--url` (optional) url to process. If url omitted, `response` and `url` objects inside the console will be `nil` (use [browser](#browser-object) object to navigate to any webpage).
 
 ### Available drivers
 Kimurai has support for following drivers and mostly can switch between them without need to rewrite any code:
@@ -491,7 +494,7 @@ Kimurai has support for following drivers and mostly can switch between them wit
 * `:selenium_chrome` Chrome in headless mode driven by selenium. Modern headless browser solution with proper javascript rendering.
 * `:selenium_firefox` Firefox in headless mode driven by selenium. Usually takes more memory than other drivers, but sometimes can be useful.
 
-Tip: add `HEADLESS=false` env variable before command (`$ HEADLESS=false ruby crawler.rb`) to run browser in normal (not headless) mode and see it's window (only for selenium-like drivers).
+Tip: add `HEADLESS=false` env variable before command (`$ HEADLESS=false ruby crawler.rb`) to run browser in normal (not headless) mode and see it's window (only for selenium-like drivers). It works for [console](#interactive-console) command as well.
 
 
 ### Minimum required crawler structure
@@ -1424,6 +1427,370 @@ Here, `@config` of `CustomCrawler` will be _[deep merged](https://apidock.com/ra
 
 
 ## Project mode
+
+Kimurai can work in project mode ([Like Scrapy](https://doc.scrapy.org/en/latest/intro/tutorial.html#creating-a-project)). To generate a new project, run: `$ kimurai new web_crawlers` (where `web_crawlers` is name of project).
+
+Structure of the project:
+
+```bash
+.
+├── config/
+│   ├── initializers/
+│   ├── application.rb
+│   ├── automation.yml
+│   ├── boot.rb
+│   └── schedule.rb
+├── crawlers/
+│   └── application_crawler.rb
+├── db/
+├── helpers/
+│   └── application_helper.rb
+├── lib/
+├── log/
+├── pipelines/
+│   ├── validator.rb
+│   └── saver.rb
+├── tmp/
+├── .env
+├── Gemfile
+├── Gemfile.lock
+└── README.md
+```
+
+<details/>
+  <summary>Description</summary>
+
+* `config/` folder for configutation files
+  * `config/initializers` [Rails-like initializers](https://guides.rubyonrails.org/configuring.html#using-initializer-files) to load custom code at start of framework
+  * `config/application.rb` configuration settings for Kimurai (`Kimurai.configure do` block)
+  * `config/automation.yml` specify some settings for [setup and deploy](#automated-sever-setup-and-deployment)
+  * `config/boot.rb` loads framework and project
+  * `config/schedule.rb` Cron [schedule for crawlers](#schedule-crawlers-using-cron)
+* `crawlers/` place for crawlers
+  * `crawlers/application_crawler.rb` Base parent class for crawlers
+* `db/` store here all database files (`sqlite`, `json`, `csv`, etc.)
+* `helpers/` Rails-like helpers for crawlers
+  * `helpers/application_helper.rb` all methods inside ApplicationHelper module will be available for all crawlers
+* `lib/` put here custom Ruby code
+* `log/` folder for logs
+* `pipelines/` folder for [Scrapy-like](https://doc.scrapy.org/en/latest/topics/item-pipeline.html) pipelines. One file = one pipeline
+  * `pipelines/validator.rb` example pipeline to validate item
+  * `pipelines/saver.rb` example pipeline to save item
+* `tmp/` folder for temp. files
+* `.env` file to store env variables for project and load them using [Dotenv](https://github.com/bkeepers/dotenv)
+* `Gemfile` dependency file
+* `Readme.md` example project readme
+</details>
+
+
+### Generate new crawler
+To generate a new crawler in the project run:
+
+```bash
+$ kimurai generate crawler example_crawler
+      create  crawlers/example_crawler.rb
+```
+
+Command will generate a new crawler class inherited from `ApplicationCrawler`:
+
+```ruby
+class ExampleCrawler < ApplicationCrawler
+  @name = "example_crawler"
+  @start_urls = []
+  @config = {}
+
+  def parse(response, url:, data: {})
+  end
+end
+```
+
+### Start
+To run a particular crawler in the project, run: `$ bundle exec kimurai start example_crawler`. Don't forget to add `bundle exec` before command to load required environment.
+
+### List
+To list all project crawlers, run: `$ bundle exec kimurai list`
+
+### Parse
+For project crawlers you can use `$ kimurai parse` command which helps to debug crawlers:
+
+```bash
+$ bundle exec kimurai parse example_crawler parse_product --url https://example-shop.com/product-1
+```
+
+where `example_crawler` is crawler to start, `parse_product` is crawler method to process and `--url` is url to open inside processing method.
+
+### Pipelines, `send_item` method
+You can use item pipelines to organize and store in one place item processing logic for all project crawlers (also check Scrapy [description of pipelines](https://doc.scrapy.org/en/latest/topics/item-pipeline.html#item-pipeline)).
+
+Imagine if you have three crawlers where each of them crawls different e-commerce shop and saves only shoe positions. For each crawler, you want to save items only with "shoe" category, unique stock number, valid title/price and with images exists. To avoid code duplication between crawlers, use pipelines:
+
+<details/>
+  <summary>Show example</summary>
+
+pipelines/validator.rb
+```ruby
+class Validator < Kimurai::Pipeline
+  def process_item(item, options: {})
+    # Here you can validate item and raise `DropItemError`
+    # if one of the validations failed. Examples:
+
+    # drop item if it's category is not "shoe"
+    unless item[:category] == "shoe"
+      raise DropItemError, "Category is wrong"
+    end
+
+    # Check item stock number for uniqueness using buit-in unique? helper:
+    unless unique?(stock_number: item[:stock_number])
+      raise DropItemError, "Item is not unique"
+    end
+
+    # Drop item if title length shorter than 5 symbols:
+    if item[:title].size < 5
+      raise DropItemError, "Item title is too short"
+    end
+
+    # Drop item if price is nil
+    unless item[:price]
+      raise DropItemError, "Price is not present"
+    end
+
+    # Drop item if it doesn't contains any images:
+    unless item[:images].present?
+      raise DropItemError, "Images are not present"
+    end
+
+    # Pass item to the next pipeline (if it wasn't dropped):
+    item
+  end
+end
+
+```
+
+pipelines/saver.rb
+```ruby
+class Saver < Kimurai::Pipeline
+  def process_item(item, options: {})
+    # Here you can save item to the database, send it to a remote API or
+    # simply save item to a file format using `save_to` helper:
+
+    # to get the name of current crawler: `self.class.crawler.name`
+    save_to "db/#{self.class.crawler.name}.json", format: :json
+
+    item
+  end
+end
+```
+
+crawlers/application_crawler.rb
+```ruby
+class ApplicationCrawler < Kimurai::Base
+  @driver = :selenium_chrome
+  # Define pipelines (by order) for all crawlers:
+  @pipelines = [:validator, :saver]
+end
+```
+
+crawlers/shop_crawler_1.rb
+```ruby
+class ShopCrawlerOne < ApplicationCrawler
+  @name = "shop_crawler_1"
+  @start_urls = ["https://shop-1.com"]
+
+  # ...
+
+  def parse_product(response, url:, data: {})
+    item = {}
+
+    item[:title] = response.xpath("//path/to/title").text.squish
+    item[:category] = response.xpath("//path/to/category").text.squish.downcase
+    item[:stock_number] = response.xpath("//path/to/stock_number").text.squish.downcase
+    item[:price] = response.xpath("//path/to/price").text.squish[/\d+/]&.to_i
+    item[:images] = response.xpath("//path/to/images").map { |image| image[:src] }
+
+    # Send item to pipelines:
+    send_item item
+  end
+end
+```
+
+<details/>
+  <summary>crawlers/shop_crawler_2.rb</summary>
+
+```ruby
+class ShopCrawlerTwo < ApplicationCrawler
+  @name = "shop_crawler_2"
+  @start_urls = ["https://shop-2.com"]
+
+  # ...
+
+  def parse_product(response, url:, data: {})
+    item = {}
+
+    item[:title] = response.xpath("//path/to/title").text.squish
+    item[:category] = response.xpath("//path/to/category").text.squish.downcase
+    item[:stock_number] = response.xpath("//path/to/stock_number").text.squish.downcase
+    item[:price] = response.xpath("//path/to/price").text.squish[/\d+/]&.to_i
+    item[:images] = response.xpath("//path/to/images").map { |image| image[:src] }
+
+    # Send item to pipelines:
+    send_item item
+  end
+end
+```
+</details>
+
+<details/>
+  <summary>crawlers/shop_crawler_3.rb</summary>
+
+```ruby
+class ShopCrawlerThree < ApplicationCrawler
+  @name = "shop_crawler_3"
+  @start_urls = ["https://shop-3.com"]
+
+  # ...
+
+  def parse_product(response, url:, data: {})
+    item = {}
+
+    item[:title] = response.xpath("//path/to/title").text.squish
+    item[:category] = response.xpath("//path/to/category").text.squish.downcase
+    item[:stock_number] = response.xpath("//path/to/stock_number").text.squish.downcase
+    item[:price] = response.xpath("//path/to/price").text.squish[/\d+/]&.to_i
+    item[:images] = response.xpath("//path/to/images").map { |image| image[:src] }
+
+    # Send item to pipelines:
+    send_item item
+  end
+end
+```
+</details>
+</details><br>
+
+When you start using pipelines, there are additional stats for items appears: item counts (send/processed) + dropped items errors:
+
+<details/>
+  <summary>Show example</summary>
+
+pipelines/validator.rb
+```ruby
+class Validator < Kimurai::Pipeline
+  def process_item(item, options: {})
+    if item[:star_count] < 10
+      raise DropItemError, "Repository doesn't have enough stars"
+    end
+
+    item
+  end
+end
+```
+
+crawlers/github_crawler.rb
+```ruby
+class GithubCrawler < ApplicationCrawler
+  @name = "github_crawler"
+  @driver = :selenium_chrome
+  @pipelines = [:validator]
+  @start_urls = ["https://github.com/search?q=Ruby%20Web%20Scraping"]
+
+  def parse(response, url:, data: {})
+    response.xpath("//ul[@class='repo-list']/div//h3/a").each do |a|
+      request_to :parse_repo_page, url: absolute_url(a[:href], base: url)
+    end
+
+    if next_page = response.at_xpath("//a[@class='next_page']")
+      request_to :parse, url: absolute_url(next_page[:href], base: url)
+    end
+  end
+
+  def parse_repo_page(response, url:, data: {})
+    item = {}
+
+    item[:owner] = response.xpath("//h1//a[@rel='author']").text
+    item[:repo_name] = response.xpath("//h1/strong[@itemprop='name']/a").text
+    item[:repo_url] = url
+    item[:description] = response.xpath("//span[@itemprop='about']").text.squish
+    item[:tags] = response.xpath("//div[@id='topics-list-container']/div/a").map { |a| a.text.squish }
+    item[:watch_count] = response.xpath("//ul[@class='pagehead-actions']/li[contains(., 'Watch')]/a[2]").text.squish.delete(",").to_i
+    item[:star_count] = response.xpath("//ul[@class='pagehead-actions']/li[contains(., 'Star')]/a[2]").text.squish.delete(",").to_i
+    item[:fork_count] = response.xpath("//ul[@class='pagehead-actions']/li[contains(., 'Fork')]/a[2]").text.squish.delete(",").to_i
+    item[:last_commit] = response.xpath("//span[@itemprop='dateModified']/*").text
+
+    send_item item
+  end
+end
+```
+
+```
+$ bundle exec kimurai start github_crawler
+
+D, [2018-08-08 12:05:12 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Session builder: driver gem required: selenium
+D, [2018-08-08 12:05:12 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Session builder: created session instance
+I, [2018-08-08 12:05:12 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Session: started get request to: https://github.com/search?q=Ruby%20Web%20Scraping
+D, [2018-08-08 12:05:12 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Session builder: enabled window size for selenium_chrome
+D, [2018-08-08 12:05:12 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Session builder: enabled ignore ssl_errors for selenium_chrome
+D, [2018-08-08 12:05:12 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Session builder: enabled native headless mode for selenium_chrome
+D, [2018-08-08 12:05:12 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Session builder: enabled disable_images for selenium_chrome
+D, [2018-08-08 12:05:12 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Session builder: created driver instance (selenium_chrome)
+I, [2018-08-08 12:05:12 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Session: a new session driver has been created: driver name: selenium_chrome, pid: 26826, port: 9516
+I, [2018-08-08 12:05:21 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Session: finished get request to: https://github.com/search?q=Ruby%20Web%20Scraping
+I, [2018-08-08 12:05:21 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Stats visits: requests: 1, responses: 1
+D, [2018-08-08 12:05:21 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Session: current_memory: 122062
+I, [2018-08-08 12:05:21 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Session: started get request to: https://github.com/lorien/awesome-web-scraping
+I, [2018-08-08 12:05:22 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Session: finished get request to: https://github.com/lorien/awesome-web-scraping
+I, [2018-08-08 12:05:22 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Stats visits: requests: 2, responses: 2
+D, [2018-08-08 12:05:22 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Session: current_memory: 226805
+D, [2018-08-08 12:05:22 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Pipeline: starting processing item through 1 pipeline...
+I, [2018-08-08 12:05:22 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Pipeline: processed item: {"owner":"lorien","repo_name":"awesome-web-scraping","repo_url":"https://github.com/lorien/awesome-web-scraping","description":"List of libraries, tools and APIs for web scraping and data processing.","tags":["awesome","awesome-list","web-scraping","data-processing","python","javascript","php","ruby"],"watch_count":161,"star_count":2403,"fork_count":349,"last_commit":"23 days ago"}
+I, [2018-08-08 12:05:22 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Stats items: sent: 1, processed: 1
+I, [2018-08-08 12:05:22 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Session: started get request to: https://github.com/jaimeiniesta/metainspector
+I, [2018-08-08 12:05:23 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Session: finished get request to: https://github.com/jaimeiniesta/metainspector
+I, [2018-08-08 12:05:23 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Stats visits: requests: 3, responses: 3
+D, [2018-08-08 12:05:23 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Session: current_memory: 237720
+D, [2018-08-08 12:05:23 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Pipeline: starting processing item through 1 pipeline...
+I, [2018-08-08 12:05:23 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Pipeline: processed item: {"owner":"jaimeiniesta","repo_name":"metainspector","repo_url":"https://github.com/jaimeiniesta/metainspector","description":"Ruby gem for web scraping purposes. It scrapes a given URL, and returns you its title, meta description, meta keywords, links, images...","tags":[],"watch_count":21,"star_count":805,"fork_count":137,"last_commit":"on May 15"}
+I, [2018-08-08 12:05:23 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Stats items: sent: 2, processed: 2
+
+...
+
+I, [2018-08-08 12:05:37 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Session: started get request to: https://github.com/yomete/scrapertutorial
+I, [2018-08-08 12:05:38 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Session: finished get request to: https://github.com/yomete/scrapertutorial
+I, [2018-08-08 12:05:38 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Stats visits: requests: 13, responses: 13
+D, [2018-08-08 12:05:38 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Session: current_memory: 261316
+D, [2018-08-08 12:05:38 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Pipeline: starting processing item through 1 pipeline...
+E, [2018-08-08 12:05:38 +0400#26794] [Main: 47379445818880] ERROR -- github_crawler: Pipeline: dropped item: #<Kimurai::Pipeline::DropItemError: Repository doesn't have enough stars>: {:owner=>"yomete", :repo_name=>"scrapertutorial", :repo_url=>"https://github.com/yomete/scrapertutorial", :description=>"Code Repository for a tutorial on web scraping with Rails", :tags=>["rails", "ruby", "nokogiri", "scraping-websites"], :watch_count=>1, :star_count=>4, :fork_count=>2, :last_commit=>"on Feb 25, 2017"}
+E, [2018-08-08 12:05:38 +0400#26794] [Main: 47379445818880] ERROR -- github_crawler: Pipeline: full error: Traceback (most recent call last):
+...
+/home/victor/code/web_crawlers/pipelines/validator.rb:4:in `process_item': Repository doesn't have enough stars (Kimurai::Pipeline::DropItemError)
+
+I, [2018-08-08 12:05:38 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Stats items: sent: 11, processed: 10
+I, [2018-08-08 12:05:38 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Session: started get request to: https://github.com/jonstokes/stretched.io
+I, [2018-08-08 12:05:39 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Session: finished get request to: https://github.com/jonstokes/stretched.io
+I, [2018-08-08 12:05:39 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Stats visits: requests: 14, responses: 14
+D, [2018-08-08 12:05:39 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Session: current_memory: 257619
+D, [2018-08-08 12:05:39 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Pipeline: starting processing item through 1 pipeline...
+E, [2018-08-08 12:05:39 +0400#26794] [Main: 47379445818880] ERROR -- github_crawler: Pipeline: dropped item: #<Kimurai::Pipeline::DropItemError: Repository doesn't have enough stars>: {:owner=>"jonstokes", :repo_name=>"stretched.io", :repo_url=>"https://github.com/jonstokes/stretched.io", :description=>"a JSON/Ruby web scraping PaaS", :tags=>[], :watch_count=>1, :star_count=>8, :fork_count=>0, :last_commit=>"on Aug 27, 2015"}
+E, [2018-08-08 12:05:39 +0400#26794] [Main: 47379445818880] ERROR -- github_crawler: Pipeline: full error: Traceback (most recent call last):
+...
+/home/victor/code/web_crawlers/pipelines/validator.rb:4:in `process_item': Repository doesn't have enough stars (Kimurai::Pipeline::DropItemError)
+
+I, [2018-08-08 12:05:39 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Stats items: sent: 12, processed: 10
+I, [2018-08-08 12:05:39 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Session: started get request to: https://github.com/albertobraschi/ronin-web
+
+...
+
+I, [2018-08-08 12:05:45 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Crawler: stopped: {:crawler_name=>"github_crawler", :status=>:completed, :environment=>"development", :start_time=>2018-08-08 12:05:11 +0400, :stop_time=>2018-08-08 12:05:45 +0400, :running_time=>"33s", :session_id=>nil, :visits=>{:requests=>23, :responses=>23, :requests_errors=>{}}, :items=>{:sent=>20, :processed=>11, :drop_errors=>{"#<Kimurai::Pipeline::DropItemError: Repository doesn't have enough stars>"=>9}}, :error=>nil, :server=>{:hostname=>"my-pc", :ipv4=>"192.168.0.2", :process_pid=>26794}}
+
+```
+</details>
+
+
+
+### runner
+experimental
+
+### stats + dashboard
+experimental
+
 
 <!-- <details/>
   <summary>List details</summary>

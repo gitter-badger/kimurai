@@ -390,7 +390,7 @@ brew install mongodb
 Kimurai has support for following drivers and mostly can switch between them without need to rewrite any code:
 
 * `:mechanize` - [pure Ruby fake http browser](https://github.com/sparklemotion/mechanize). Mechanize can't render javascript and don't know what DOM is it. It only can parse original HTML code of a page. Because of it, mechanize much faster, takes much less memory and in general much more stable than any real browser. Use mechanize if you can do it, and the website doesn't use javascript to render any meaningful parts of its structure. Still, because mechanize trying to mimic a real browser, it supports almost all Capybara's [methods to interact with a web page](http://cheatrags.com/capybara) (filling forms, clicking buttons, checkboxes, etc).
-* `:poltergeist_phantomjs` - [PhantomJS headless browser](https://github.com/ariya/phantomjs), can render javascript. In general, PhantomJS still faster than Headless Chrome (and headless firefox). PhantomJS has memory leakage, but Kimurai has [memory control feature](#crawler-config) so you shouldn't consider it as a problem. Also, some websites can recognize PhantomJS and block access to them. Like mechanize (and unlike selenium drivers) `:poltergeist_phantomjs` can freely rotate proxies and change headers _on the fly_ (See Config section).
+* `:poltergeist_phantomjs` - [PhantomJS headless browser](https://github.com/ariya/phantomjs), can render javascript. In general, PhantomJS still faster than Headless Chrome (and headless firefox). PhantomJS has memory leakage, but Kimurai has [memory control feature](#crawler-config) so you shouldn't consider it as a problem. Also, some websites can recognize PhantomJS and block access to them. Like mechanize (and unlike selenium drivers) `:poltergeist_phantomjs` can freely rotate proxies and change headers _on the fly_ (see [config section](#all-available-config-options)).
 * `:selenium_chrome` Chrome in headless mode driven by selenium. Modern headless browser solution with proper javascript rendering.
 * `:selenium_firefox` Firefox in headless mode driven by selenium. Usually takes more memory than other drivers, but sometimes can be useful.
 
@@ -841,7 +841,6 @@ class Crawler < Kimurai::Base
 
   def parse_item(response, url:, data: {})
     item = {}
-
     # ...
 
     save_to "results.json", item, format: :json
@@ -1328,10 +1327,6 @@ end
 Here, `@config` of `CustomCrawler` will be _[deep merged](https://apidock.com/rails/Hash/deep_merge)_ with `ApplicationCrawler` config, so `CustomCrawler` will keep all inherited options with only `delay` updated.
 
 
-<!-- ### parallel crawling (), delay -->
-<!-- yes, proxy and headers are changeable + memory control and auto reloading (see configuration). -->
-<!-- debugging and development env (pry (ls method), byebug), HEADLESS=false -->
-
 <!-- <details/>
   <summary>List details</summary>
 
@@ -1339,3 +1334,6 @@ Here, `@config` of `CustomCrawler` will be _[deep merged](https://apidock.com/ra
 puts "check"
 ```
 </details> -->
+
+## License
+The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).

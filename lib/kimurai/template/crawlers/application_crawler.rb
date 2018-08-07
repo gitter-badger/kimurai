@@ -27,122 +27,96 @@ class ApplicationCrawler < Kimurai::Base
   # If for some crawler you need to tweak these settings,
   # just write a custom @config there, and it will be DEEP merged with this one.
   @config = {
-    # Default headers for a session.
-    # Format: hash. Example: { "some header" => "some value", "another header" => "another valye" }
-    # works only for :mechanize and :poltergeist_phantomjs drivers (selenium don't allow to set custom headers).
+    # Custom headers, format: hash. Example: { "some header" => "some value", "another header" => "another value" }
+    # Works only for :mechanize and :poltergeist_phantomjs drivers (Selenium don't allow to set/get headers)
     headers: {},
 
-    # user_agent.
-    # Format: string or lambda. Example of user agent string: "Some user agent".
-    # If provided lambda, user_agent object will be called while creating session.
+    # Custom user agent, format: string or lambda.
+    # Use lambda if you want to rotate user agents before each run:
+    # user_agent: -> { ARRAY_OF_USER_AGENTS.sample }
     # Works for all drivers
-    # Note for chrome: keep in mind that chrome in native headless mode has headless user-agent,
-    # so it's probably better to change it if you use chrome in headless mode
-    user_agent: -> { USER_AGENTS.sample },
+    user_agent: "Mozilla/5.0 Firefox/61.0",
 
-    # Default cookies for a session.
-    # Format: array of hashes.
-    # Format for a single cookie: { name: "cookie name", value: "cookie value", ... }
-    # name, value, and domain are required.
-    # Works for all drivers.
-    # cookies: [],
+    # Custom cookies, format: array of hashes.
+    # Format for a single cookie: { name: "cookie name", value: "cookie value", domain: ".example.com" }
+    # Works for all drivers
+    cookies: [],
 
-    # Start url to visit for selenium to set default cookies. Suddenly selenium
-    # don't allow to set cookies if current_url == "data:," (default url after session creation),
-    # so we have to provide url to visit first, and than set cookies.
-    # Selenium chrome allows to set cookies to any domain, it only needs to have any valid webpage
-    # to be visited. For selenium firefox allowed to set cookies only for
-    # current visited webpage's domain.
-    selenium_url_to_set_cookies: "",
+    # Selenium drivers only: start url to visit to set custom cookies. Selenium doesn't
+    # allow to set custom cookies if current browser url is empty (start page).
+    # To set cookies browser needs to visit some webpage first (and domain of this
+    # webpage should be the same as the domain of cookie).
+    selenium_url_to_set_cookies: "http://example.com/",
 
-    # Proxy.
-    # Format: string or lambda.
-    # Format of proxy string: "protocol:ip:port:user:password"
+    # Proxy, format: string or lambda. Format of proxy string: "protocol:ip:port:user:password"
     # `protocol` can be http or socks5. User and password are optional.
-    # If provided lambda, proxy object will be called while creating session.
-    # Works for all drivers, but keep in mind wht selenium (:selenium_firefox, :selenium_chrome)
-    # doesn't support proxies with authorization. Also mechanize don't support socks proxy (only http)
-    # proxy: -> { PROXIES.sample },
+    # Use lambda if you want to rotate proxies before each run:
+    # proxy: -> { ARRAY_OF_PROXIES.sample }
+    # Works for all drivers, but keep in mind that Selenium drivers doesn't support proxies
+    # with authorization. Also, Mechanize driver doesn't support socks5 proxy format (only http)
+    proxy: "http:3.4.5.6:3128:user:pass",
 
-    # Tells not to use proxy for the list of domains or IP addresses.
-    # Format: array of strings.
-    # https://winaero.com/blog/override-proxy-settings-google-chrome/
-    # Works only for :selenium_firefox and selenium_chrome.
-    proxy_bypass_list: [],
-
-    # Absolute path to the custom ssl cert. For example when you use proxy such as Crawlera,
-    # or Mitmproxy with a self signed certs.
-    # Works only for :poltergeist_phantomjs and :mechanize
-    # ssl_cert_path: "path/to/cert",
-
-    # If enabled, driver session will ignore any https errors. It also handy
-    # when using proxy (for example crawlera with self signed cert in case of selenium)
-    # or mitmproxy. Also, it will allow to download sites with expires https certs.
-    # Works for all drivers.
+    # If enabled, browser will ignore any https errors. It's handy while using a proxy
+    # with self-signed SSL cert (for example Crawlera or Mitmproxy)
+    # Also, it will allow to visit webpages with expires SSL certificate.
+    # Works for all drivers
     ignore_ssl_errors: true,
 
-    # window resolution, works for all browsers
+    # Custom window size, works for all drivers
     window_size: [1366, 768],
 
-    # If true, images will not be loaded.
-    # Works for all browsers
+    # Skip images downloading if true, works for all drivers
     disable_images: true,
 
-    # Headless mode for selenium browsers.
-    # Possible values :native or :virtual_display (default is :native)
-    # It's better to use native mode always, but some browsers (chrome)
-    # has restricted possibilities in headless mode, for example chrome don't support
-    # extentions in headless mode. In this case, good option is to use browser
-    # in normal mode within virtual display (xvfb).
-    # note: define env variable HEADLESS=false to run browser in normal mode (for debug)
-    # Option works only for selenium browsers (and virtual_display only for linux environment)
-    # Also, virtual_display mode can be usefull in case of chrome headless, some websites
-    # can detect headless chrome (even with custom useragent). With virtual_display mode
-    # chrome not detectable like in headless mode
-    headless_mode: :native, # virtual_display
+    # Selenium drivers only: headless mode, `:native` or `:virtual_display` (default is :native)
+    # Although native mode has a better performance, virtual display mode
+    # sometimes can be useful. For example, some websites can detect (and block)
+    # headless chrome, so you can use virtual_display mode instead
+    headless_mode: :native,
 
-    # Session options
+    # This option tells the browser not to use a proxy for the provided list of domains or IP addresses.
+    # Format: array of strings. Works only for :selenium_firefox and selenium_chrome
+    proxy_bypass_list: [],
+
+    # Option to provide custom SSL certificate. Works only for :poltergeist_phantomjs and :mechanize
+    ssl_cert_path: "path/to/ssl_cert",
+
+    # Session (browser) options
     session: {
-      # automatically recreate session driver (browser) when one of conditions will be true.
-      # Note: conditions checks before each session request
       recreate_driver_if: {
-        # when requests count for session driver will reach this limit, driver will be recreated
-        # requests_count: 80, # and more
-        # when session driver reach provided memory size, driver will be recreated
-        memory_size: 350_000 # and more
+        # Restart browser if provided memory limit (in kilobytes) is exceeded (works for all drivers)
+        memory_size: 350_000,
+
+        # Restart browser if provided requests count is exceeded (works for all drivers)
+        requests_count: 100
       },
       before_request: {
-        # works only for poltergeist and mechanize
-        # `proxy` setting should be a lambda
-        # change_proxy: true,
-        # done # works only for poltergeist and mechanize
-        # `user_agent` setting should be present and should be a lambda object
+        # Change proxy before each request. The `proxy:` option above should be presented
+        # and has lambda format. Works only for poltergeist and mechanize drivers
+        # (selenium doesn't support proxy rotation).
+        change_proxy: true,
+
+        # Change user agent before each request. The `user_agent:` option above should be presented
+        # and has lambda format. Works only for poltergeist and mechanize drivers
+        # (selenium doesn't support to get/set headers).
         change_user_agent: true,
-        # works for all
+
+        # Clear all cookies before each request, works for all drivers
         clear_cookies: true,
-        # works for all # with some restrictions for selenium
-        # clear_and_set_cookies: true,
+
+        # If you want to clear all cookies + set custom cookies (`cookies:` option above should be presented)
+        # use this option instead (works for all drivers)
+        clear_and_set_cookies: true,
+
         # Global option to set delay between requests.
-        # Can be integer (5) or range (2..5). If range, delay number will be choosed randomly.
-        # Note: you can set cusom delay for a custom request within `#request_to` method,
-        # example: `request_to(:parse_listing, url: url, delay: 3..6)`,
-        # or even directly while calling `session_instance#visit`, example: `browser.visit(url, delay: 3)`
-        # delay: 3..6,
+        # Delay can be `Integer`, `Float` or `Range` (`2..5`). In case of a range,
+        # delay number will be chosen randomly for each request: `rand (2..5) # => 3`
+        delay: 1..3,
       }
     }
   }
 
-  # Class methods .at_start and .at_stop will be called once
-  # at starting and stopping. You can put in these methods some analytics, like
-  # notification when crawler was started (inside .at_start method) and notification
-  # when crawler was stopped (inside .at_stop method).
-  # Use class method `.info` to determine status of the crawler. Possible values
-  # of `info[:status]` is :running, :completed or :failed. There are additional helping methods
-  # like `.running?`, `.completed?` and `.failed?`. For example in case of failed run,
-  # you probably will want to send notification with error message, so inside
-  # .at_stop, `status` will help you to determine the status of a run. Also, `.info`
-  # contains a lot of information about crawlers run, like total count of requests, items,
-  # pipelines errors, starting, start/stop time, etc.
+
   def self.at_start
     # puts "From crawler, before start"
   end

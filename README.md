@@ -390,7 +390,7 @@ brew install mongodb
 Kimurai has support for following drivers and mostly can switch between them without need to rewrite any code:
 
 * `:mechanize` - [pure Ruby fake http browser](https://github.com/sparklemotion/mechanize). Mechanize can't render javascript and don't know what DOM is it. It only can parse original HTML code of a page. Because of it, mechanize much faster, takes much less memory and in general much more stable than any real browser. Use mechanize if you can do it, and the website doesn't use javascript to render any meaningful parts of its structure. Still, because mechanize trying to mimic a real browser, it supports almost all Capybara's [methods to interact with a web page](http://cheatrags.com/capybara) (filling forms, clicking buttons, checkboxes, etc).
-* `:poltergeist_phantomjs` - [PhantomJS headless browser](https://github.com/ariya/phantomjs), can render javascript. In general, PhantomJS still faster than Headless Chrome (and headless firefox). PhantomJS has memory leakage, but Kimurai has memory control feature so you shouldn't consider it as a problem. Also, some websites can recognize PhantomJS and block access to them. Like mechanize (and unlike selenium drivers) `:poltergeist_phantomjs` can freely rotate proxies and change headers _on the fly_ (See Config section).
+* `:poltergeist_phantomjs` - [PhantomJS headless browser](https://github.com/ariya/phantomjs), can render javascript. In general, PhantomJS still faster than Headless Chrome (and headless firefox). PhantomJS has memory leakage, but Kimurai has [memory control feature](#crawler-config) so you shouldn't consider it as a problem. Also, some websites can recognize PhantomJS and block access to them. Like mechanize (and unlike selenium drivers) `:poltergeist_phantomjs` can freely rotate proxies and change headers _on the fly_ (See Config section).
 * `:selenium_chrome` Chrome in headless mode driven by selenium. Modern headless browser solution with proper javascript rendering.
 * `:selenium_firefox` Firefox in headless mode driven by selenium. Usually takes more memory than other drivers, but sometimes can be useful.
 
@@ -850,8 +850,29 @@ end
 ```
 </details>
 
-### Parallel crawling using `in_parallel`
 
+### `KIMURAI_ENV`
+Kimurai has environments, default is `development`. To provide custom environment pass `KIMURAI_ENV` env variable before command: `$ KIMURAI_ENV=production ruby crawler.rb`. To access current environment from Ruby there is `Kimurai.env` method.
+
+Usage example:
+```ruby
+class Crawler < Kimurai::Base
+  @driver = :selenium_chrome
+  @start_urls = ["https://example.com/"]
+
+  def self.at_stop
+    if failed? && Kimurai.env == "production"
+      send_error_notification(run_info[:error])
+    else
+      # do nothing
+    end
+  end
+
+  # ...
+end
+```
+
+### Parallel crawling using `in_parallel`
 Kimurai can process web pages concurrently in one single line: `in_parallel(:parse_product, 3, urls: urls)`, where `:parse_product` is a method to process, `3` is count of threads and `urls:` is array of urls to crawl.
 
 ```ruby
@@ -1078,6 +1099,26 @@ end
 
 You can check Whenever examples [here](https://github.com/javan/whenever#example-schedulerb-file). To cancel schedule, run: `$ whenever --clear-crontab --load-file schedule.rb`.
 
+### Configuration options
+You can configure several options using `configure` block:
+
+```ruby
+Kimurai.configure do |config|
+  # Don't colorize default logger in development mode:
+  # config.colorize_logger = false
+
+  # Logger level for default logger:
+  # config.log_level = :info
+
+  # custom logger (you can use logstash for example with multiple sources):
+  # config.logger = Logger.new(STDOUT)
+
+  # Define custom time zone for logs:
+  # config.time_zone = "UTC"
+  # config.time_zone = "Europe/Moscow"
+end
+```
+
 ### Automated sever setup and deployment
 > **EXPERIMENTAL**
 
@@ -1110,33 +1151,186 @@ Example:
 
 ```bash
 $ ls -a
-Gemfile Gemfile.lock .git/ config/
-
 $ kimurai deploy deploy@123.123.123.123 --ssh-key-path path/to/private_key --repo-key-path path/to/repo_private_key
 ```
 
-CLI options: same like for [setup](#setup) command (except `--ask-sudo`) plus
+CLI options: same like for [setup](#setup) command (except `--ask-sudo`), plus
 * `--repo-url` provide custom repo url (`--repo-url git@bitbucket.org:username/repo_name.git`), otherwise current `origin/master` will be taken (output from `$ git remote get-url origin`)
 * `--repo-key-path` if git repository is private, authorization is required to pull the code on the remote server. Use this option to provide a private repository SSH key. You can omit it if required key already added to keychain on your desktop (same like with `--ssh-key-path` option)
 
 > You can check deploy playbook [here](lib/kimurai/automation/deploy.yml)
 
+## Crawler `@config`
+
+Using `@config` you can set several options for crawler, like proxy, user-agent, default cookies/headers, delay between requests, browser **memory control** and so on:
+
+```ruby
+class Crawler < Kimurai::Base
+  USER_AGENTS = ["Chrome", "Firefox", "Safari", "Opera"]
+  PROXIES = ["http:2.3.4.5:8080:username:password", "http:3.4.5.6:3128", "socks5:1.2.3.4:3000"]
+
+  @driver = :poltergeist_phantomjs
+  @start_urls = ["https://example.com/"]
+  @config = {
+    headers: { "custom_header" => "custom_value" },
+    cookies: [{ name: "cookie_name", value: "cookie_value", domain: ".example.com" }],
+    user_agent: -> { USER_AGENTS.sample },
+    proxy: -> { PROXIES.sample },
+    window_size: [1366, 768],
+    disable_images: true,
+    session: {
+      recreate_driver_if: {
+        # Restart browser if provided memory limit (in kilobytes) is exceeded:
+        memory_size: 350_000
+      },
+      before_request: {
+        # Change user agent before each request:
+        change_user_agent: true,
+        # Change proxy before each request:
+        change_proxy: true,
+        clear_and_set_cookies: true,
+        delay: 1..3
+      }
+    }
+  }
+
+  def parse(response, url:, data: {})
+    # ...
+  end
+end
+```
+
+### All available `@config` options
+
+```ruby
+@config = {
+  # Custom headers, format: hash. Example: { "some header" => "some value", "another header" => "another value" }
+  # Works only for :mechanize and :poltergeist_phantomjs drivers (Selenium don't allow to set/get headers)
+  headers: {},
+
+  # Custom user agent, format: string or lambda.
+  # Use lambda if you want to rotate user agents before each run:
+  # user_agent: -> { ARRAY_OF_USER_AGENTS.sample }
+  # Works for all drivers
+  user_agent: "Mozilla/5.0 Firefox/61.0",
+
+  # Custom cookies, format: array of hashes.
+  # Format for a single cookie: { name: "cookie name", value: "cookie value", domain: ".example.com" }
+  # Works for all drivers
+  cookies: [],
+
+  # Selenium drivers only: start url to visit to set custom cookies. Selenium doesn't
+  # allow to set custom cookies if current browser url is empty (start page).
+  # To set cookies browser needs to visit some webpage first (and domain of this
+  # webpage should be the same as the domain of cookie).
+  selenium_url_to_set_cookies: "http://example.com/",
+
+  # Proxy, format: string or lambda. Format of proxy string: "protocol:ip:port:user:password"
+  # `protocol` can be http or socks5. User and password are optional.
+  # Use lambda if you want to rotate proxies before each run:
+  # proxy: -> { ARRAY_OF_PROXIES.sample }
+  # Works for all drivers, but keep in mind that Selenium drivers doesn't support proxies
+  # with authorization. Also, Mechanize driver doesn't support socks5 proxy format (only http)
+  proxy: "http:3.4.5.6:3128:user:pass",
+
+  # If enabled, browser will ignore any https errors. It's handy while using a proxy
+  # with self-signed SSL cert (for example Crawlera or Mitmproxy)
+  # Also, it will allow to visit webpages with expires SSL certificate.
+  # Works for all drivers
+  ignore_ssl_errors: true,
+
+  # Custom window size, works for all drivers
+  window_size: [1366, 768],
+
+  # Skip images downloading if true, works for all drivers
+  disable_images: true,
+
+  # Selenium drivers only: headless mode, `:native` or `:virtual_display` (default is :native)
+  # Although native mode has a better performance, virtual display mode
+  # sometimes can be useful. For example, some websites can detect (and block)
+  # headless chrome, so you can use virtual_display mode instead
+  headless_mode: :native,
+
+  # This option tells the browser not to use a proxy for the provided list of domains or IP addresses.
+  # Format: array of strings. Works only for :selenium_firefox and selenium_chrome
+  proxy_bypass_list: [],
+
+  # Option to provide custom SSL certificate. Works only for :poltergeist_phantomjs and :mechanize
+  ssl_cert_path: "path/to/ssl_cert",
+
+  # Session (browser) options
+  session: {
+    recreate_driver_if: {
+      # Restart browser if provided memory limit (in kilobytes) is exceeded (works for all drivers)
+      memory_size: 350_000,
+
+      # Restart browser if provided requests count is exceeded (works for all drivers)
+      requests_count: 100
+    },
+    before_request: {
+      # Change proxy before each request. The `proxy:` option above should be presented
+      # and has lambda format. Works only for poltergeist and mechanize drivers
+      # (selenium doesn't support proxy rotation).
+      change_proxy: true,
+
+      # Change user agent before each request. The `user_agent:` option above should be presented
+      # and has lambda format. Works only for poltergeist and mechanize drivers
+      # (selenium doesn't support to get/set headers).
+      change_user_agent: true,
+
+      # Clear all cookies before each request, works for all drivers
+      clear_cookies: true,
+
+      # If you want to clear all cookies + set custom cookies (`cookies:` option above should be presented)
+      # use this option instead (works for all drivers)
+      clear_and_set_cookies: true,
+
+      # Global option to set delay between requests.
+      # Delay can be `Integer`, `Float` or `Range` (`2..5`). In case of a range,
+      # delay number will be chosen randomly for each request: `rand (2..5) # => 3`
+      delay: 1..3,
+    }
+  }
+}
+```
+
+As you can see, most of the options are universal for any driver.
+
+### `@config` settings inheritance
+Settings can be inherited:
+
+```ruby
+class ApplicationCrawler < Kimurai::Base
+  @driver = :poltergeist_phantomjs
+  @config = {
+    user_agent: "Firefox",
+    disable_images: true,
+    session: {
+      recreate_driver_if: { memory_size: 350_000 },
+      before_request: { delay: 1..2 }
+    }
+  }
+end
+
+class CustomCrawler < ApplicationCrawler
+  @name = "custom_crawler"
+  @start_urls = ["https://example.com/"]
+  @config = {
+    session: { before_request: { delay: 4..6 }}
+  }
+
+  def parse(response, url:, data: {})
+    # ...
+  end
+end
+```
+
+Here, `@config` of `CustomCrawler` will be _[deep merged](https://apidock.com/rails/Hash/deep_merge)_ with `ApplicationCrawler` config, so `CustomCrawler` will keep all inherited options with only `delay` updated.
+
 
 <!-- ### parallel crawling (), delay -->
 <!-- yes, proxy and headers are changeable + memory control and auto reloading (see configuration). -->
-
-<!-- at_start at_stop callbacks -->
-
-<!-- ## Custom configuration -->
-
-<!-- @config -->
-
-
-<!-- helpers, uniq helper with to_id -->
-
 <!-- debugging and development env (pry (ls method), byebug), HEADLESS=false -->
-
-<!-- articles about capybara and nokogiri -->
 
 <!-- <details/>
   <summary>List details</summary>
@@ -1145,7 +1339,3 @@ CLI options: same like for [setup](#setup) command (except `--ask-sudo`) plus
 puts "check"
 ```
 </details> -->
-
-
-<!-- ### Content
-* Selectors - xpath or css. For capybara default is xpath. -->

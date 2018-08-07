@@ -178,8 +178,8 @@ module Kimurai
       public_send(handler, browser.current_response, request_data)
     end
 
-    def console
-      Object.const_defined?("Pry") ? binding.pry : binding.irb
+    def console(response = nil, url: nil, data: {})
+      binding.pry
     end
 
     def browser

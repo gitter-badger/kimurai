@@ -13,7 +13,7 @@ module Kimurai
     def generate(generator_type, *args)
       case generator_type
       when "crawler"
-        check_for_project
+        raise "Can't find Kimurai project" unless inside_project?
 
         crawler_name = args.shift
         raise "Provide crawler name to generate a crawler" if crawler_name.nil? || crawler_name.empty?
@@ -68,7 +68,7 @@ module Kimurai
 
     desc "start", "Starts the crawler by crawler name"
     def start(crawler_name)
-      check_for_project
+      raise "Can't find Kimurai project" unless inside_project?
       require './config/boot'
 
       klass = find_crawler(crawler_name)
@@ -79,7 +79,7 @@ module Kimurai
     desc "parse", "Process given url in the specific callback"
     option :url, aliases: :j, type: :string, required: true, banner: "Url to pass to the callback"
     def parse(crawler_name, callback)
-      check_for_project
+      raise "Can't find Kimurai project" unless inside_project?
       require './config/boot'
 
       klass = find_crawler(crawler_name)
@@ -91,7 +91,7 @@ module Kimurai
 
     desc "list", "Lists all crawlers in the project"
     def list
-      check_for_project
+      raise "Can't find Kimurai project" unless inside_project?
       require './config/boot'
 
       Base.descendants.each do |klass|
@@ -102,7 +102,7 @@ module Kimurai
     desc "runner", "Starts all crawlers in the project in queue"
     option :jobs, aliases: :j, type: :numeric, default: 1, banner: "The number of concurrent jobs"
     def runner
-      check_for_project
+      raise "Can't find Kimurai project" unless inside_project?
 
       jobs = options["jobs"]
       raise "Jobs count can't be 0" if jobs == 0
@@ -112,30 +112,39 @@ module Kimurai
       Runner.new(parallel_jobs: jobs).run!
     end
 
-    desc "console", "Start console mode for a specific crawler"
-    option :driver, aliases: :d, type: :string, banner: "Driver to default session"
+    desc "console", "Start console"
+    option :driver, aliases: :d, type: :string, banner: "Driver for console session"
+    option :url, type: :string, banner: "Url to process"
     def console(crawler_name = nil)
-      check_for_project
-      require './config/boot'
+      require 'pry'
 
-      klass =
-        if crawler_name
-          find_crawler(crawler_name)
-        else
-          ApplicationCrawler
-        end
-      klass.preload!
-
-      if driver = options["driver"]&.to_sym
-        klass.new(driver: driver).console
+      if crawler_name
+        raise "Can't find Kimurai project" unless inside_project?
+        require './config/boot'
+        klass = crawler_name ? find_crawler(crawler_name) : ApplicationCrawler
       else
-        klass.new.console
+        require_relative 'all'
+        klass = ::Kimurai::Base
+      end
+
+      klass.preload!
+      instance =
+        if driver = options["driver"]&.to_sym
+          klass.new(driver: driver)
+        else
+          klass.new
+        end
+
+      if url = options["url"]
+        instance.request_to(:console, url: url)
+      else
+        instance.console
       end
     end
 
     desc "dashboard", "Run web dashboard server"
     def dashboard
-      check_for_project
+      raise "Can't find Kimurai project" unless inside_project?
 
       require './config/boot'
       unless Kimurai.configuration.stats_database_url
@@ -207,8 +216,8 @@ module Kimurai
       command
     end
 
-    def check_for_project
-      raise "Can't find a project" unless Dir.exists? "crawlers"
+    def inside_project?
+      Dir.exists? "crawlers"
     end
 
     def find_crawler(crawler_name)

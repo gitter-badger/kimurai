@@ -172,7 +172,7 @@ module Capybara
 
     def process_delay(delay)
       interval = (delay.class == Range ? rand(delay) : delay)
-      logger.debug "Session: sleeping: #{interval} before request..."
+      logger.debug "Session: sleeping #{interval.round(2)} #{'second'.pluralize(interval)} before request..."
 
       sleep interval
     end

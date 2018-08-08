@@ -18,7 +18,7 @@ Kimurai.configure do |config|
   # Add custom request errors to retry:
   # config.retry_request_errors += [Net::HTTPBadGateway]
 
-  # at start callback for runner's session. Accepts argument with session info as hash with
+  # At start callback for runner's session. Accepts argument with session info as hash with
   # keys: id, status, start_time, environment, concurrent_jobs, crawlers.
   # For example, you can use this callback to send notification when session was started:
   # config.runner_at_start_callback = lambda do |session_info|
@@ -26,8 +26,8 @@ Kimurai.configure do |config|
   #  Sender.send_notification("Started session: #{json}")
   # end
 
-  # at stop callback for runner's session. Accepts argument with session info as hash with
-  # all runner_at_start_callback keys plus additional stop_time parameter. Also `status` contains
+  # At stop callback for runner's session. Accepts argument with session info as hash with
+  # all `runner_at_start_callback` keys plus additional `stop_time` parameter. Also `status` contains
   # stop status of session (completed or failed).
   # For example, you can use this callback to send notification when session was stopped:
   # config.runner_at_stop_callback = lambda do |session_info|

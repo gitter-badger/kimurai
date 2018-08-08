@@ -1617,7 +1617,7 @@ end
 ```
 
 <details/>
-  <summary>crawlers/shop_crawler_2.rb</summary>
+  &nbsp;<summary>crawlers/shop_crawler_2.rb</summary>
 
 ```ruby
 class ShopCrawlerTwo < ApplicationCrawler
@@ -1642,7 +1642,7 @@ end
 ```
 </details>
 
-<details/>
+<details>
   <summary>crawlers/shop_crawler_3.rb</summary>
 
 ```ruby
@@ -1671,7 +1671,7 @@ end
 
 When you start using pipelines, there are additional stats for items appears: item counts (send/processed) + dropped items errors:
 
-<details/>
+<details>
   <summary>Show example</summary>
 
 pipelines/validator.rb
@@ -1691,9 +1691,12 @@ crawlers/github_crawler.rb
 ```ruby
 class GithubCrawler < ApplicationCrawler
   @name = "github_crawler"
-  @driver = :selenium_chrome
+  @driver = :mechanize
   @pipelines = [:validator]
   @start_urls = ["https://github.com/search?q=Ruby%20Web%20Scraping"]
+  @config = {
+    user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.84 Safari/537.36"
+  }
 
   def parse(response, url:, data: {})
     response.xpath("//ul[@class='repo-list']/div//h3/a").each do |a|
@@ -1726,72 +1729,122 @@ end
 ```
 $ bundle exec kimurai start github_crawler
 
-D, [2018-08-08 12:05:12 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Session builder: driver gem required: selenium
-D, [2018-08-08 12:05:12 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Session builder: created session instance
-I, [2018-08-08 12:05:12 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Session: started get request to: https://github.com/search?q=Ruby%20Web%20Scraping
-D, [2018-08-08 12:05:12 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Session builder: enabled window size for selenium_chrome
-D, [2018-08-08 12:05:12 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Session builder: enabled ignore ssl_errors for selenium_chrome
-D, [2018-08-08 12:05:12 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Session builder: enabled native headless mode for selenium_chrome
-D, [2018-08-08 12:05:12 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Session builder: enabled disable_images for selenium_chrome
-D, [2018-08-08 12:05:12 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Session builder: created driver instance (selenium_chrome)
-I, [2018-08-08 12:05:12 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Session: a new session driver has been created: driver name: selenium_chrome, pid: 26826, port: 9516
-I, [2018-08-08 12:05:21 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Session: finished get request to: https://github.com/search?q=Ruby%20Web%20Scraping
-I, [2018-08-08 12:05:21 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Stats visits: requests: 1, responses: 1
-D, [2018-08-08 12:05:21 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Session: current_memory: 122062
-I, [2018-08-08 12:05:21 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Session: started get request to: https://github.com/lorien/awesome-web-scraping
-I, [2018-08-08 12:05:22 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Session: finished get request to: https://github.com/lorien/awesome-web-scraping
-I, [2018-08-08 12:05:22 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Stats visits: requests: 2, responses: 2
-D, [2018-08-08 12:05:22 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Session: current_memory: 226805
-D, [2018-08-08 12:05:22 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Pipeline: starting processing item through 1 pipeline...
-I, [2018-08-08 12:05:22 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Pipeline: processed item: {"owner":"lorien","repo_name":"awesome-web-scraping","repo_url":"https://github.com/lorien/awesome-web-scraping","description":"List of libraries, tools and APIs for web scraping and data processing.","tags":["awesome","awesome-list","web-scraping","data-processing","python","javascript","php","ruby"],"watch_count":161,"star_count":2403,"fork_count":349,"last_commit":"23 days ago"}
-I, [2018-08-08 12:05:22 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Stats items: sent: 1, processed: 1
-I, [2018-08-08 12:05:22 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Session: started get request to: https://github.com/jaimeiniesta/metainspector
-I, [2018-08-08 12:05:23 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Session: finished get request to: https://github.com/jaimeiniesta/metainspector
-I, [2018-08-08 12:05:23 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Stats visits: requests: 3, responses: 3
-D, [2018-08-08 12:05:23 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Session: current_memory: 237720
-D, [2018-08-08 12:05:23 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Pipeline: starting processing item through 1 pipeline...
-I, [2018-08-08 12:05:23 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Pipeline: processed item: {"owner":"jaimeiniesta","repo_name":"metainspector","repo_url":"https://github.com/jaimeiniesta/metainspector","description":"Ruby gem for web scraping purposes. It scrapes a given URL, and returns you its title, meta description, meta keywords, links, images...","tags":[],"watch_count":21,"star_count":805,"fork_count":137,"last_commit":"on May 15"}
-I, [2018-08-08 12:05:23 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Stats items: sent: 2, processed: 2
+D, [2018-08-08 14:49:17 +0400#20515] [Main: 47341785277920] DEBUG -- github_crawler: Session builder: driver gem required: mechanize
+D, [2018-08-08 14:49:17 +0400#20515] [Main: 47341785277920] DEBUG -- github_crawler: Session builder: created session instance
+D, [2018-08-08 14:49:17 +0400#20515] [Main: 47341785277920] DEBUG -- github_crawler: Session builder: created driver instance (mechanize)
+D, [2018-08-08 14:49:17 +0400#20515] [Main: 47341785277920] DEBUG -- github_crawler: Session: can't define driver_pid and driver_port for mechanize, not supported
+I, [2018-08-08 14:49:17 +0400#20515] [Main: 47341785277920]  INFO -- github_crawler: Session: a new session driver has been created: driver name: mechanize, pid: , port:
+D, [2018-08-08 14:49:17 +0400#20515] [Main: 47341785277920] DEBUG -- github_crawler: Session builder: enabled custom useragent for mechanize
+I, [2018-08-08 14:49:17 +0400#20515] [Main: 47341785277920]  INFO -- github_crawler: Session: started get request to: https://github.com/search?q=Ruby%20Web%20Scraping
+I, [2018-08-08 14:49:19 +0400#20515] [Main: 47341785277920]  INFO -- github_crawler: Session: finished get request to: https://github.com/search?q=Ruby%20Web%20Scraping
+I, [2018-08-08 14:49:19 +0400#20515] [Main: 47341785277920]  INFO -- github_crawler: Stats visits: requests: 1, responses: 1
+I, [2018-08-08 14:49:19 +0400#20515] [Main: 47341785277920]  INFO -- github_crawler: Session: started get request to: https://github.com/lorien/awesome-web-scraping
+I, [2018-08-08 14:49:19 +0400#20515] [Main: 47341785277920]  INFO -- github_crawler: Session: finished get request to: https://github.com/lorien/awesome-web-scraping
+I, [2018-08-08 14:49:19 +0400#20515] [Main: 47341785277920]  INFO -- github_crawler: Stats visits: requests: 2, responses: 2
+D, [2018-08-08 14:49:19 +0400#20515] [Main: 47341785277920] DEBUG -- github_crawler: Pipeline: starting processing item through 1 pipeline...
+I, [2018-08-08 14:49:19 +0400#20515] [Main: 47341785277920]  INFO -- github_crawler: Pipeline: processed item: {"owner":"lorien","repo_name":"awesome-web-scraping","repo_url":"https://github.com/lorien/awesome-web-scraping","description":"List of libraries, tools and APIs for web scraping and data processing.","tags":["awesome","awesome-list","web-scraping","data-processing","python","javascript","php","ruby"],"watch_count":161,"star_count":2403,"fork_count":349,"last_commit":"Jul 16, 2018"}
+I, [2018-08-08 14:49:19 +0400#20515] [Main: 47341785277920]  INFO -- github_crawler: Stats items: sent: 1, processed: 1
+I, [2018-08-08 14:49:19 +0400#20515] [Main: 47341785277920]  INFO -- github_crawler: Session: started get request to: https://github.com/jaimeiniesta/metainspector
+I, [2018-08-08 14:49:20 +0400#20515] [Main: 47341785277920]  INFO -- github_crawler: Session: finished get request to: https://github.com/jaimeiniesta/metainspector
+I, [2018-08-08 14:49:20 +0400#20515] [Main: 47341785277920]  INFO -- github_crawler: Stats visits: requests: 3, responses: 3
+D, [2018-08-08 14:49:20 +0400#20515] [Main: 47341785277920] DEBUG -- github_crawler: Pipeline: starting processing item through 1 pipeline...
+I, [2018-08-08 14:49:20 +0400#20515] [Main: 47341785277920]  INFO -- github_crawler: Pipeline: processed item: {"owner":"jaimeiniesta","repo_name":"metainspector","repo_url":"https://github.com/jaimeiniesta/metainspector","description":"Ruby gem for web scraping purposes. It scrapes a given URL, and returns you its title, meta description, meta keywords, links, images...","tags":[],"watch_count":21,"star_count":805,"fork_count":137,"last_commit":"May 15, 2018"}
+I, [2018-08-08 14:49:20 +0400#20515] [Main: 47341785277920]  INFO -- github_crawler: Stats items: sent: 2, processed: 2
 
 ...
 
-I, [2018-08-08 12:05:37 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Session: started get request to: https://github.com/yomete/scrapertutorial
-I, [2018-08-08 12:05:38 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Session: finished get request to: https://github.com/yomete/scrapertutorial
-I, [2018-08-08 12:05:38 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Stats visits: requests: 13, responses: 13
-D, [2018-08-08 12:05:38 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Session: current_memory: 261316
-D, [2018-08-08 12:05:38 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Pipeline: starting processing item through 1 pipeline...
-E, [2018-08-08 12:05:38 +0400#26794] [Main: 47379445818880] ERROR -- github_crawler: Pipeline: dropped item: #<Kimurai::Pipeline::DropItemError: Repository doesn't have enough stars>: {:owner=>"yomete", :repo_name=>"scrapertutorial", :repo_url=>"https://github.com/yomete/scrapertutorial", :description=>"Code Repository for a tutorial on web scraping with Rails", :tags=>["rails", "ruby", "nokogiri", "scraping-websites"], :watch_count=>1, :star_count=>4, :fork_count=>2, :last_commit=>"on Feb 25, 2017"}
-E, [2018-08-08 12:05:38 +0400#26794] [Main: 47379445818880] ERROR -- github_crawler: Pipeline: full error: Traceback (most recent call last):
+I, [2018-08-08 14:49:24 +0400#20515] [Main: 47341785277920]  INFO -- github_crawler: Session: started get request to: https://github.com/yomete/scrapertutorial
+I, [2018-08-08 14:49:24 +0400#20515] [Main: 47341785277920]  INFO -- github_crawler: Session: finished get request to: https://github.com/yomete/scrapertutorial
+I, [2018-08-08 14:49:24 +0400#20515] [Main: 47341785277920]  INFO -- github_crawler: Stats visits: requests: 13, responses: 13
+D, [2018-08-08 14:49:24 +0400#20515] [Main: 47341785277920] DEBUG -- github_crawler: Pipeline: starting processing item through 1 pipeline...
+E, [2018-08-08 14:49:24 +0400#20515] [Main: 47341785277920] ERROR -- github_crawler: Pipeline: dropped item: #<Kimurai::Pipeline::DropItemError: Repository doesn't have enough stars>: {:owner=>"yomete", :repo_name=>"scrapertutorial", :repo_url=>"https://github.com/yomete/scrapertutorial", :description=>"Code Repository for a tutorial on web scraping with Rails", :tags=>["rails", "ruby", "nokogiri", "scraping-websites"], :watch_count=>1, :star_count=>4, :fork_count=>2, :last_commit=>"Feb 25, 2017"}
+E, [2018-08-08 14:49:24 +0400#20515] [Main: 47341785277920] ERROR -- github_crawler: Pipeline: full error: Traceback (most recent call last):
 ...
 /home/victor/code/web_crawlers/pipelines/validator.rb:4:in `process_item': Repository doesn't have enough stars (Kimurai::Pipeline::DropItemError)
 
-I, [2018-08-08 12:05:38 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Stats items: sent: 11, processed: 10
-I, [2018-08-08 12:05:38 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Session: started get request to: https://github.com/jonstokes/stretched.io
-I, [2018-08-08 12:05:39 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Session: finished get request to: https://github.com/jonstokes/stretched.io
-I, [2018-08-08 12:05:39 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Stats visits: requests: 14, responses: 14
-D, [2018-08-08 12:05:39 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Session: current_memory: 257619
-D, [2018-08-08 12:05:39 +0400#26794] [Main: 47379445818880] DEBUG -- github_crawler: Pipeline: starting processing item through 1 pipeline...
-E, [2018-08-08 12:05:39 +0400#26794] [Main: 47379445818880] ERROR -- github_crawler: Pipeline: dropped item: #<Kimurai::Pipeline::DropItemError: Repository doesn't have enough stars>: {:owner=>"jonstokes", :repo_name=>"stretched.io", :repo_url=>"https://github.com/jonstokes/stretched.io", :description=>"a JSON/Ruby web scraping PaaS", :tags=>[], :watch_count=>1, :star_count=>8, :fork_count=>0, :last_commit=>"on Aug 27, 2015"}
-E, [2018-08-08 12:05:39 +0400#26794] [Main: 47379445818880] ERROR -- github_crawler: Pipeline: full error: Traceback (most recent call last):
+I, [2018-08-08 14:49:24 +0400#20515] [Main: 47341785277920]  INFO -- github_crawler: Stats items: sent: 11, processed: 10
+I, [2018-08-08 14:49:24 +0400#20515] [Main: 47341785277920]  INFO -- github_crawler: Session: started get request to: https://github.com/jonstokes/stretched.io
+I, [2018-08-08 14:49:24 +0400#20515] [Main: 47341785277920]  INFO -- github_crawler: Session: finished get request to: https://github.com/jonstokes/stretched.io
+I, [2018-08-08 14:49:24 +0400#20515] [Main: 47341785277920]  INFO -- github_crawler: Stats visits: requests: 14, responses: 14
+D, [2018-08-08 14:49:24 +0400#20515] [Main: 47341785277920] DEBUG -- github_crawler: Pipeline: starting processing item through 1 pipeline...
+E, [2018-08-08 14:49:24 +0400#20515] [Main: 47341785277920] ERROR -- github_crawler: Pipeline: dropped item: #<Kimurai::Pipeline::DropItemError: Repository doesn't have enough stars>: {:owner=>"jonstokes", :repo_name=>"stretched.io", :repo_url=>"https://github.com/jonstokes/stretched.io", :description=>"a JSON/Ruby web scraping PaaS", :tags=>[], :watch_count=>1, :star_count=>8, :fork_count=>0, :last_commit=>"Aug 27, 2015"}
+E, [2018-08-08 14:49:24 +0400#20515] [Main: 47341785277920] ERROR -- github_crawler: Pipeline: full error: Traceback (most recent call last):
 ...
 /home/victor/code/web_crawlers/pipelines/validator.rb:4:in `process_item': Repository doesn't have enough stars (Kimurai::Pipeline::DropItemError)
 
-I, [2018-08-08 12:05:39 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Stats items: sent: 12, processed: 10
-I, [2018-08-08 12:05:39 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Session: started get request to: https://github.com/albertobraschi/ronin-web
+I, [2018-08-08 14:49:24 +0400#20515] [Main: 47341785277920]  INFO -- github_crawler: Stats items: sent: 12, processed: 10
+I, [2018-08-08 14:49:24 +0400#20515] [Main: 47341785277920]  INFO -- github_crawler: Session: started get request to: https://github.com/albertobraschi/ronin-web
 
 ...
 
-I, [2018-08-08 12:05:45 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Crawler: stopped: {:crawler_name=>"github_crawler", :status=>:completed, :environment=>"development", :start_time=>2018-08-08 12:05:11 +0400, :stop_time=>2018-08-08 12:05:45 +0400, :running_time=>"33s", :session_id=>nil, :visits=>{:requests=>23, :responses=>23, :requests_errors=>{}}, :items=>{:sent=>20, :processed=>11, :drop_errors=>{"#<Kimurai::Pipeline::DropItemError: Repository doesn't have enough stars>"=>9}}, :error=>nil, :server=>{:hostname=>"my-pc", :ipv4=>"192.168.0.2", :process_pid=>26794}}
-
+I, [2018-08-08 14:50:42 +0400#20515] [Main: 47341785277920]  INFO -- github_crawler: Crawler: stopped: {:crawler_name=>"github_crawler", :status=>:completed, :environment=>"development", :start_time=>2018-08-08 14:49:17 +0400, :stop_time=>2018-08-08 14:50:42 +0400, :running_time=>"1m, 24s", :session_id=>nil, :visits=>{:requests=>138, :responses=>138, :requests_errors=>{}, :items=>{:sent=>125, :processed=>11, :drop_errors=>{"#<Kimurai::Pipeline::DropItemError: Repository doesn't have enough stars>"=>114}}, :error=>nil, :server=>{:hostname=>"my-pc", :ipv4=>"192.168.0.2", :process_pid=>20515}}
 ```
 </details><br>
 
 Also, you can pass custom options to pipeline from a particular crawler if you want to change pipeline behavior for this crawler:
 
+<details>
+  <summary>Show example</summary>
+
+crawlers/custom_crawler.rb
+```ruby
+class CustomCrawler < ApplicationCrawler
+  @name = "custom_crawler"
+  @start_urls = ["https://example.com"]
+  @pipelines = [:validator]
+
+  # ...
+
+  def parse_item(response, url:, data: {})
+    item = {}
+
+    # ...
+
+    # Pass custom option `skip_uniq_checking` for Validator pipeline:
+    send_item item, validator: { skip_uniq_checking: true }
+  end
+end
+
+```
+
+pipelines/validator.rb
+```ruby
+class Validator < Kimurai::Pipeline
+  def process_item(item, options: {})
+
+    # Do not check item stock number for uniqueness if options[:skip_uniq_checking] == true
+    unless options[:skip_uniq_checking] == true
+      raise DropItemError, "Item is not unique" unless unique?(stock_number: item[:stock_number])
+    end
+  end
+end
+```
+</details>
 
 
-### runner
-experimental
+### Runner
+> **EXPERIMENTAL**
+
+You can run project crawlers one by one or in parallel using `$ kimurai runner` command:
+
+```
+$ bundle exec kimurai list
+custom_crawler
+example_crawler
+github_crawler
+
+$ bundle exec kimurai runner -j 3
+>> Runner: started session: {:id=>1533727423, :status=>:processing, :start_time=>2018-08-08 15:23:43 +0400, :stop_time=>nil, :environment=>"development", :concurrent_jobs=>3, :crawlers=>["custom_crawler", "github_crawler", "example_crawler"]}
+> Runner: started crawler: custom_crawler, index: 0
+> Runner: started crawler: github_crawler, index: 1
+> Runner: started crawler: example_crawler, index: 2
+< Runner: stopped crawler: custom_crawler, index: 0
+< Runner: stopped crawler: example_crawler, index: 2
+< Runner: stopped crawler: github_crawler, index: 1
+>> Runner: stopped session: {:id=>1533727423, :status=>:completed, :start_time=>2018-08-08 15:23:43 +0400, :stop_time=>2018-08-08 15:25:11 +0400, :environment=>"development", :concurrent_jobs=>3, :crawlers=>["custom_crawler", "github_crawler", "example_crawler"]}
+```
+
+Each crawler runs in separate process. Crawlers logs will be available at `log/` folder. Pass `-j` option to specify how many crawlers should be processed at the same time (default is 1).
 
 ### stats + dashboard
 experimental

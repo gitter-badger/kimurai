@@ -21,6 +21,7 @@ module Kimurai
       running_pids = []
 
       ENV.store("SESSION_ID", session_id.to_s)
+      ENV.store("RBCAT_COLORIZER", "false")
 
       session_info = {
         id: session_id,

@@ -65,10 +65,14 @@ module Kimurai
     def check_session_proxy_for_poltergeist_mechanize
       if @config[:proxy].present? && [:mechanize, :poltergeist].include?(driver_type)
         proxy_string = fetch_proxy
-        @session.set_proxy(proxy_string)
-
         proxy_type, proxy_ip, proxy_port, proxy_user, proxy_password = proxy_string.strip.split(":").map(&:strip)
-        Log.debug "Session builder: enabled #{proxy_type} proxy for `#{driver_name}`: #{proxy_ip}:#{proxy_port}"
+
+        if proxy_type == "socks5" && driver_type == :mechanize
+          Log.error "Session builder: can't set socks5 proxy for mechanize (doesn't support), skip"
+        else
+          @session.set_proxy(proxy_string)
+          Log.debug "Session builder: enabled #{proxy_type} proxy for `#{driver_name}`: #{proxy_ip}:#{proxy_port}"
+        end
       end
     end
 

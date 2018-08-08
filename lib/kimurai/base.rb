@@ -98,6 +98,8 @@ module Kimurai
       Kimurai.current_crawler = name
       Capybara::Session.logger = Log.instance
 
+      Capybara::Session.retry_request_errors = Kimurai.configuration.retry_request_errors
+
       if time_zone = Kimurai.configuration.time_zone
         Kimurai.time_zone = time_zone
       end

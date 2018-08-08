@@ -9,6 +9,15 @@ Kimurai.configure do |config|
   # custom logger (you can use logstash for example with multiple sources)
   # config.logger = Logger.new(STDOUT)
 
+  # Define custom time zone, so timestamps in logs and stats database will have
+  # this custom time zone. Makes sense to use same custom time zone in config and schedule.rb
+  # (using local_to_utc helper). Or just use everywhere "UTC" (like in Rails).
+  # config.time_zone = "UTC"
+  # config.time_zone = "Europe/Moscow"
+
+  # Add custom request errors to retry:
+  # config.retry_request_errors += [Net::HTTPBadGateway]
+
   # at start callback for runner's session. Accepts argument with session info as hash with
   # keys: id, status, start_time, environment, concurrent_jobs, crawlers.
   # For example, you can use this callback to send notification when session was started:
@@ -25,12 +34,6 @@ Kimurai.configure do |config|
   #   json = JSON.pretty_generate(session_info)
   #   Sender.send_notification("Stopped session: #{json}")
   # end
-
-  # Define custom time zone, so timestamps in logs and stats database will have
-  # this custom time zone. Makes sense to use same custom time zone in config and schedule.rb
-  # (using local_to_utc helper). Or just use everywhere "UTC" (like in rails).
-  # config.time_zone = "UTC"
-  # config.time_zone = "Europe/Moscow"
 
   # Provide stats_database_url to enable stats and save info about crawlers runs and sessions to
   # a database. To check stats run dashboard: `$ bundle exec kimurai dashboard`.

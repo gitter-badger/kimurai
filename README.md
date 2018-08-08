@@ -1215,6 +1215,9 @@ Kimurai.configure do |config|
   # Define custom time zone for logs:
   # config.time_zone = "UTC"
   # config.time_zone = "Europe/Moscow"
+
+  # Add custom request errors to retry:
+  # config.retry_request_errors += [Net::HTTPBadGateway]
 end
 ```
 
@@ -1781,7 +1784,9 @@ I, [2018-08-08 12:05:39 +0400#26794] [Main: 47379445818880]  INFO -- github_craw
 I, [2018-08-08 12:05:45 +0400#26794] [Main: 47379445818880]  INFO -- github_crawler: Crawler: stopped: {:crawler_name=>"github_crawler", :status=>:completed, :environment=>"development", :start_time=>2018-08-08 12:05:11 +0400, :stop_time=>2018-08-08 12:05:45 +0400, :running_time=>"33s", :session_id=>nil, :visits=>{:requests=>23, :responses=>23, :requests_errors=>{}}, :items=>{:sent=>20, :processed=>11, :drop_errors=>{"#<Kimurai::Pipeline::DropItemError: Repository doesn't have enough stars>"=>9}}, :error=>nil, :server=>{:hostname=>"my-pc", :ipv4=>"192.168.0.2", :process_pid=>26794}}
 
 ```
-</details>
+</details><br>
+
+Also, you can pass custom options to pipeline from a particular crawler if you want to change pipeline behavior for this crawler:
 
 
 

@@ -39,3 +39,4 @@ module Kimurai
   end
 end
 
+require_relative 'kimurai/default_configuration'

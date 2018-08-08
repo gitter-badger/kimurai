@@ -11,10 +11,9 @@ require_relative 'session/proxy'
 
 module Capybara
   class Session
-    RETRY_REQUEST_ERRORS = [Net::ReadTimeout].freeze
-
     class << self
       attr_accessor :logger
+      attr_accessor :retry_request_errors
 
       def logger
         @logger ||= Logger.new(STDOUT)
@@ -58,13 +57,12 @@ module Capybara
         sleep_interval ||= 0
 
         check_request_options unless skip_request_options
-
         self.class.stats[:requests] += 1
         stats[:requests] += 1
-        logger.info "Session: started get request to: #{visit_uri}"
 
+        logger.info "Session: started get request to: #{visit_uri}"
         original_visit(visit_uri)
-      rescue *RETRY_REQUEST_ERRORS => e
+      rescue *self.class.retry_request_errors => e
         error = e.inspect
         self.class.stats[:requests_errors][error] += 1
         logger.error "Session: request visit error: #{error}, url: #{visit_uri}"

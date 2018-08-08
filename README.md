@@ -13,6 +13,8 @@ Kimurai based on well-known [Capybara](https://github.com/teamcapybara/capybara)
 ```ruby
 # github_crawler.rb
 
+[![Join the chat at https://gitter.im/kimurai/Lobby](https://badges.gitter.im/kimurai/Lobby.svg)](https://gitter.im/kimurai/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 require 'kimurai'
 require 'kimurai/all'
 

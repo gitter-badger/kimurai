@@ -185,24 +185,24 @@ I, [2018-08-04 17:54:45 +0400#29308] [Main: 47115312711160]  INFO -- infinite_sc
 ```
 </details><br>
 
-## Features
 
-* Scrape javascript rendered websites
-* Supported drivers: [Headless Chrome](https://developers.google.com/web/updates/2017/04/headless-chrome), [Headless Firefox](https://developer.mozilla.org/en-US/docs/Mozilla/Firefox/Headless_mode), [PhantomJS](https://github.com/ariya/phantomjs) and  HTTP requests ([mechanize](https://github.com/sparklemotion/mechanize) gem)
-* Write crawler code once, and use it with any supported driver later. You can even switch between drivers on the fly
+## Features
+* Scrape javascript rendered websites out of box
+* Supported drivers: [Headless Chrome](https://developers.google.com/web/updates/2017/04/headless-chrome), [Headless Firefox](https://developer.mozilla.org/en-US/docs/Mozilla/Firefox/Headless_mode), [PhantomJS](https://github.com/ariya/phantomjs) or simple HTTP requests ([mechanize](https://github.com/sparklemotion/mechanize) gem)
+* Write crawler code once, and use it with any supported driver later
 * All the power of [Capybara](https://github.com/teamcapybara/capybara): use methods like `click_on`, `fill_in`, `select`, `choose`, `set`, `go_back`, etc. to interact with web pages
-* Rich configuration: **set default headers, cookies, delay between requests, enable proxy/user-agents rotation**. Auto retry if a request was failed
-* Settings and crawlers inheritation
-* **Two modes:** write a single file for simple crawler, or generate Scrapy like **project with pipelines, configuration, etc.**
-* Automatically restart browser when reaching memory limit **(memory control)** or requests limit (set limit in the crawler config)
-* Parallel crawling using simple method: `in_parallel(:callback_name, threads_count, urls: urls)`
-* Convenient development mode with console, colorized logger and debugger ([Pry](https://github.com/pry/pry), [Byebug](https://github.com/deivid-rodriguez/byebug)). Add `HEADLESS=false` before command to quickly switch between headless (default) and normal (visible) mode for Selenium-like drivers (Chrome, Firefox).
-* Full stats for each crawler run: requests/items count + web dashboard
-* Auto environment setup (for ubuntu 16.04-18.04) and deploy using commands `kimurai setup` and `kimurai deploy` ([Ansible](https://github.com/ansible/ansible) under the hood)
-* Easily schedule crawlers within cron using [Whenever](https://github.com/javan/whenever) (no need to know cron syntax)
-* Command-line runner to run all project crawlers one by one or in parallel
-* Built-in helpers to make scraping easy, like `save_to` (save items to JSON, JSON lines, CSV or YAML formats) or `absolute_url/normalize_url`
-* `at_start` and `at_stop` callbacks which allows to make something useful (like sending notification) before crawler started or after crawler has been stopped (available full run info: requests/items count, total time, etc)
+* Rich [configuration](#crawler-config): **set default headers, cookies, delay between requests, enable proxy/user-agents rotation**
+* Built-in helpers to make scraping easy, like [save_to](#save_to-helper) (save items to JSON, JSON lines, CSV or YAML formats) or [unique?](#skip-duplicates-unique-helper) to skip duplicates
+* Automatically [retry failed requests](#configuration-options) with delay
+* Automatically restart browsers when reaching memory limit [**(memory control)**](#crawler-config) or requests limit
+* Easily [schedule crawlers](#schedule-crawlers-using-cron) within cron using [Whenever](https://github.com/javan/whenever) (no need to know cron syntax)
+* [Parallel crawling](#parallel-crawling-using-in_parallel) using simple method `in_parallel`
+* **Two modes:** use single file for a simple crawler, or [generate](#project-mode) Scrapy-like **project**
+* Convenient development mode with [console](#interactive-console), colorized logger and debugger ([Pry](https://github.com/pry/pry), [Byebug](https://github.com/deivid-rodriguez/byebug))
+* Automated [server environment setup](#setup) (for ubuntu 18.04) and [deploy](#deploy) using commands `kimurai setup` and `kimurai deploy` ([Ansible](https://github.com/ansible/ansible) under the hood)
+* Command-line [runner](#runner) to run all project crawlers one by one or in parallel
+* Stats [database with web dashboard](#stats-database--dashboard)
+
 
 ## Table of Contents
 * [Kimurai](#kimurai)
@@ -231,10 +231,20 @@ I, [2018-08-04 17:54:45 +0400#29308] [Main: 47115312711160]  INFO -- infinite_sc
     * [All available @config options](#all-available-config-options)
     * [@config settings inheritance](#config-settings-inheritance)
   * [Project mode](#project-mode)
+    * [Generate new crawler](#generate-new-crawler)
+    * [Start](#start)
+    * [List](#list)
+    * [Parse](#parse)
+    * [Pipelines, send_item method](#pipelines-send_item-method)
+    * [Runner](#runner)
+      * [Runner (session) callbacks](#runner-session-callbacks)
+    * [Stats database + dashboard](#stats-database--dashboard)
+  * [Chat Support and Feedback](#chat-support-and-feedback)
+  * [Author](#author)
   * [License](#license)
 
-## Installation
 
+## Installation
 Kimurai requires Ruby version `>= 2.5.0`. Supported platforms: `Linux` and `Mac OS X`.
 
 1) If your system doesn't have appropriate Ruby version, install it:
@@ -1469,7 +1479,7 @@ Structure of the project:
   * `config/automation.yml` specify some settings for [setup and deploy](#automated-sever-setup-and-deployment)
   * `config/boot.rb` loads framework and project
   * `config/schedule.rb` Cron [schedule for crawlers](#schedule-crawlers-using-cron)
-* `crawlers/` place for crawlers
+* `crawlers/` folder for crawlers
   * `crawlers/application_crawler.rb` Base parent class for crawlers
 * `db/` store here all database files (`sqlite`, `json`, `csv`, etc.)
 * `helpers/` Rails-like helpers for crawlers
@@ -1525,7 +1535,7 @@ where `example_crawler` is crawler to start, `parse_product` is crawler method t
 ### Pipelines, `send_item` method
 You can use item pipelines to organize and store in one place item processing logic for all project crawlers (also check Scrapy [description of pipelines](https://doc.scrapy.org/en/latest/topics/item-pipeline.html#item-pipeline)).
 
-Imagine if you have three crawlers where each of them crawls different e-commerce shop and saves only shoe positions. For each crawler, you want to save items only with "shoe" category, unique stock number, valid title/price and with images exists. To avoid code duplication between crawlers, use pipelines:
+Imagine if you have three crawlers where each of them crawls different e-commerce shop and saves only shoe positions. For each crawler, you want to save items only with "shoe" category, unique stock number, valid title/price and with existing images. To avoid code duplication between crawlers, use pipelines:
 
 <details/>
   <summary>Show example</summary>
@@ -1844,19 +1854,37 @@ $ bundle exec kimurai runner -j 3
 >> Runner: stopped session: {:id=>1533727423, :status=>:completed, :start_time=>2018-08-08 15:23:43 +0400, :stop_time=>2018-08-08 15:25:11 +0400, :environment=>"development", :concurrent_jobs=>3, :crawlers=>["custom_crawler", "github_crawler", "example_crawler"]}
 ```
 
-Each crawler runs in separate process. Crawlers logs will be available at `log/` folder. Pass `-j` option to specify how many crawlers should be processed at the same time (default is 1).
+Each crawler runs in separate process. Crawlers logs available at `log/` folder. Pass `-j` option to specify how many crawlers should be processed at the same time (default is 1).
 
-### stats + dashboard
-experimental
+#### Runner (session) callbacks
 
+You can perform custom actions before runner starts and after runner stops using `config.runner_at_start_callback` and `config.runner_at_stop_callback`. Check [config/application.rb](lib/kimurai/template/config/application.rb) to see example.
 
-<!-- <details/>
-  <summary>List details</summary>
+### Stats database + dashboard
+> **EXPERIMENTAL**
 
-```ruby
-puts "check"
+Kimurai can save info about crawlers runs and runner sessions to a database (project mode only). To enable this feature you need to set `config.stats_database_url` in `config/application.rb`. Stats can be saved to an SQlite, MySQL or Postgres database.
+
+To check stats you can run simple Kimurai dashboard:
+
 ```
-</details> -->
+$ bundle exec kimurai dashboard
+[2018-08-08 16:11:40] INFO  WEBrick 1.4.2
+[2018-08-08 16:11:40] INFO  ruby 2.5.1 (2018-03-29) [x86_64-linux]
+== Sinatra (v2.0.3) has taken the stage on 4567 for development with backup from WEBrick
+[2018-08-08 16:11:40] INFO  WEBrick::HTTPServer#start: pid=12903 port=4567
+
+# you can see dashboard at http://localhost:4567
+```
+
+See [config/application.rb](lib/kimurai/template/config/application.rb) for an additional info.
+
+
+## Chat Support and Feedback
+Join Kimurai community on Gitter
+
+## Author
+[Victor Afanasev](https://github.com/vfreefly) - https://victorafanasev.info/
 
 ## License
 The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).

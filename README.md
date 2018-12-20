@@ -224,7 +224,7 @@ I, [2018-08-04 17:54:45 +0400#29308] [Main: 47115312711160]  INFO -- infinite_sc
     * [Active Support included](#active-support-included)
     * [Schedule crawlers using Cron](#schedule-crawlers-using-cron)
     * [Configuration options](#configuration-options)
-    * [Automated sever setup and deployment](#automated-sever-setup-and-deployment)
+    * [Automated server setup and deployment](#automated-server-setup-and-deployment)
       * [Setup](#setup)
       * [Deploy](#deploy)
   * [Crawler @config](#crawler-config)
@@ -428,7 +428,7 @@ brew install mongodb
 Before you get to know all Kimurai features, there is `$ kimurai console` command which is an interactive console where you can try and debug your scraping code very quickly, without having to run any crawler (yes, it's like [Scrapy shell](https://doc.scrapy.org/en/latest/topics/shell.html#topics-shell)).
 
 ```bash
-$ kimurai console --driver selenium_chrome --url https://github.com/vfreefly/kimurai
+$ kimurai console --driver selenium_chrome --url https://github.com/gitter-badger/kimurai
 ```
 
 <details/>
@@ -1231,7 +1231,7 @@ Kimurai.configure do |config|
 end
 ```
 
-### Automated sever setup and deployment
+### Automated server setup and deployment
 > **EXPERIMENTAL**
 
 #### Setup
